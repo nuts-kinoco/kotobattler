@@ -1,0 +1,39 @@
+export type CardState = 'unused' | 'used' | 'skipped' | 'sealed';
+
+export type AirSuitability = '初動' | '静か' | '盛り上がり' | '深夜' | '疲れ気味' | '普通';
+
+export interface Card {
+  id: string;
+  title?: string;
+  text: string;
+  star: number; // 0〜5の評価
+  tags: string[];
+  memo?: string;
+  airSuitability?: AirSuitability;
+  relatedPersonIds?: string[]; // 関連人物ID
+  state: CardState;
+  // 再出現ルール
+  reappearRule?: 'everytime' | 'session_graveyard' | 'once_per_person' | 'cooldown';
+}
+
+export interface Person {
+  id: string;
+  displayName: string;
+  aliases: string[]; // 表記揺れやOCR誤認対策
+  memo?: string;
+  usedCardIds: string[]; // この人物に対して使用済みのカードID（人物墓地）
+}
+
+export interface Session {
+  isActive: boolean;
+  startTime?: string;
+  activePersonIds: string[]; // 現在のVC参加メンバーID
+  usedCardIds: string[]; // セッション墓地（このセッションで消費したカードID）
+}
+
+export interface Deck {
+  id: string;
+  name: string;
+  description?: string;
+  cardIds: string[];
+}

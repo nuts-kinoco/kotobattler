@@ -1,0 +1,18 @@
+{
+  "name": "Kotobattler | VC会話支援カードデッキ",
+  "short_name": "Kotobattler",
+  "description": "DiscordでVCしながら自然に横へ置いておける会話補助ツール",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/card-back.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
