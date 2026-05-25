@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, Users, UserPlus, Play, Square, Settings, 
   HelpCircle, Sparkles, Filter, Plus, Trash2, Check,
-  Moon, Sun
+  Moon, Sun, ChevronDown, ChevronUp, RotateCcw, Download, Upload
 } from 'lucide-react';
-import { Person, Session, AirSuitability } from '../types/deck';
+import { Card as CardType, Person, Session, AirSuitability } from '../types/deck';
 
 interface SidePanelProps {
   isOpen: boolean;
   onClose: () => void;
+  cards: CardType[];
   persons: Person[];
   session: Session;
   cardDisplayCount: number;
@@ -18,20 +19,26 @@ interface SidePanelProps {
   selectedAirSuitability: AirSuitability | 'All';
   theme: 'dark' | 'light';
   displaySize: 'small' | 'medium' | 'large';
+  keepPreviousMembers: boolean;
   setCardDisplayCount: (count: number) => void;
   setShortcutEnabled: (enabled: boolean) => void;
   setSelectedAirSuitability: (suitability: AirSuitability | 'All') => void;
   setTheme: (theme: 'dark' | 'light') => void;
+  setKeepPreviousMembers: (keep: boolean) => void;
   startSession: (personIds: string[]) => void;
   endSession: () => void;
   addPerson: (name: string, aliases: string[], memo?: string) => Person;
   updatePerson: (id: string, displayName: string, aliases: string[], memo?: string) => void;
   deletePerson: (id: string) => void;
+  resetPersonUsedCards: (id: string) => void;
+  importJSON: (jsonText: string) => boolean;
+  exportJSON: () => void;
 }
 
 export const SidePanel: React.FC<SidePanelProps> = ({
   isOpen,
   onClose,
+  cards,
   persons,
   session,
   cardDisplayCount,
@@ -39,21 +46,70 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   selectedAirSuitability,
   theme,
   displaySize,
+  keepPreviousMembers,
   setCardDisplayCount,
   setShortcutEnabled,
   setSelectedAirSuitability,
   setTheme,
+  setKeepPreviousMembers,
   startSession,
   endSession,
   addPerson,
   updatePerson,
-  deletePerson
+  deletePerson,
+  resetPersonUsedCards,
+  importJSON,
+  exportJSON
 }) => {
   const [activeTab, setActiveTab] = useState<'session' | 'settings'>('session');
+  
+  // JSONバックアップ用ファイルインプット参照
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleJsonUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleJsonFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        const success = importJSON(text);
+        if (success) {
+          alert('すべてのデータを完全復元しました！🦑');
+        } else {
+          alert('復元に失敗しました。有効なバックアップJSONファイルかご確認ください。');
+        }
+      }
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  };
   
   // セッション開始用の参加者選択状態
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([]);
   const [isStartingSessionMode, setIsStartingSessionMode] = useState<boolean>(false);
+
+  // 前回のメンバーを自動選択するための同期
+  React.useEffect(() => {
+    if (keepPreviousMembers && session.activePersonIds.length > 0) {
+      setSelectedPersonIds(session.activePersonIds);
+    }
+  }, [keepPreviousMembers, session.activePersonIds, isStartingSessionMode]);
+
+  // 一時的に候補から非表示にされたメンバーのIDリスト
+  const [excludedPersonIds, setExcludedPersonIds] = useState<string[]>([]);
+
+  // セッション開始・終了や画面の切り替え時に非表示リストを自動リセット
+  React.useEffect(() => {
+    if (session.isActive || !isStartingSessionMode) {
+      setExcludedPersonIds([]);
+    }
+  }, [session.isActive, isStartingSessionMode]);
   
   // 新規人物追加フォーム
   const [newPersonName, setNewPersonName] = useState('');
@@ -63,13 +119,48 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
   const [editingMemo, setEditingMemo] = useState('');
 
+  // 各メンバーの履歴アコーディオン開閉ステート
+  const [expandedPersonIds, setExpandedPersonIds] = useState<Record<string, boolean>>({});
+
   if (!isOpen) return null;
+
+  const togglePersonExpand = (personId: string) => {
+    setExpandedPersonIds(prev => ({
+      ...prev,
+      [personId]: !prev[personId]
+    }));
+  };
 
   const handleAddPerson = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPersonName.trim()) return;
+    const targetName = newPersonName.trim();
+    if (!targetName) return;
     
-    const added = addPerson(newPersonName.trim(), [], newPersonMemo.trim());
+    // 重複チェック: 入力された名前がすでに登録されているか確認
+    const existing = persons.find(p => 
+      p.displayName.toLowerCase() === targetName.toLowerCase() ||
+      p.aliases.some(a => a.toLowerCase() === targetName.toLowerCase())
+    );
+
+    if (existing) {
+      // すでに登録されている場合は二重作成せず、既存メンバーをセッションへ追加（またはメモ更新）
+      if (isStartingSessionMode) {
+        if (!selectedPersonIds.includes(existing.id)) {
+          setSelectedPersonIds(prev => [...prev, existing.id]);
+        }
+      }
+      
+      // 特徴メモが入力されている場合は、既存のロッカーメモをアップデートして人間に優しく
+      if (newPersonMemo.trim()) {
+        updatePerson(existing.id, existing.displayName, existing.aliases, newPersonMemo.trim());
+      }
+      
+      setNewPersonName('');
+      setNewPersonMemo('');
+      return;
+    }
+    
+    const added = addPerson(targetName, [], newPersonMemo.trim());
     if (isStartingSessionMode) {
       setSelectedPersonIds(prev => [...prev, added.id]);
     }
@@ -161,7 +252,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 <button
                   onClick={() => {
                     setIsStartingSessionMode(true);
-                    setSelectedPersonIds([]);
+                    setSelectedPersonIds(keepPreviousMembers ? session.activePersonIds : []);
                   }}
                   className="w-full py-3 bg-neon-green hover:bg-emerald-500 text-background dark:text-slate-950 font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
                 >
@@ -177,31 +268,53 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                     <p className="text-xs text-foreground/40 italic">登録されている人物がいません。下のフォームから追加してください。</p>
                   ) : (
                     <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
-                      {persons.map(p => {
-                        const isSelected = selectedPersonIds.includes(p.id);
-                        return (
-                          <label
-                            key={p.id}
-                            className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all border ${
-                              isSelected 
-                                ? 'bg-neon-green/10 border-neon-green/20 text-foreground' 
-                                : 'bg-foreground/5 border-transparent text-foreground/60 hover:bg-foreground/10'
-                            }`}
-                          >
-                            <span className="text-sm font-semibold">{p.displayName}</span>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {
-                                  setSelectedPersonIds(prev => 
-                                    isSelected ? prev.filter(id => id !== p.id) : [...prev, p.id]
-                                  );
-                              }}
-                              className="hidden"
-                            />
-                            {isSelected && <Check className="w-4 h-4 text-neon-green" />}
-                          </label>
-                        );
+                      {persons
+                        .filter(p => !excludedPersonIds.includes(p.id))
+                        .map(p => {
+                          const isSelected = selectedPersonIds.includes(p.id);
+                          return (
+                            <label
+                              key={p.id}
+                              className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all border group relative ${
+                                isSelected 
+                                  ? 'bg-neon-green/10 border-neon-green/20 text-foreground' 
+                                  : 'bg-foreground/5 border-transparent text-foreground/60 hover:bg-foreground/10'
+                              }`}
+                            >
+                              <span className="text-sm font-semibold pr-8 truncate">{p.displayName}</span>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                    setSelectedPersonIds(prev => 
+                                      isSelected ? prev.filter(id => id !== p.id) : [...prev, p.id]
+                                    );
+                                }}
+                                className="hidden"
+                              />
+                              
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {/* 候補からサクッと消すための×ボタン */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    // 候補リスト（表示）から一時的に非表示にする
+                                    setExcludedPersonIds(prev => [...prev, p.id]);
+                                    // 選択状態からも解除する
+                                    setSelectedPersonIds(prev => prev.filter(id => id !== p.id));
+                                  }}
+                                  className="p-1 rounded hover:bg-rose-500/20 text-foreground/20 hover:text-rose-400 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all z-10"
+                                  title="候補リストから一時的に除外"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+
+                                {isSelected && <Check className="w-4 h-4 text-neon-green" />}
+                              </div>
+                            </label>
+                          );
                       })}
                     </div>
                   )}
@@ -268,74 +381,133 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               <span className="text-xs text-foreground/50 font-bold uppercase tracking-widest font-mono">メンバーのロッカーメモ</span>
               
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {persons.length === 0 ? (
-                  <p className="text-xs text-foreground/30 italic py-2">まだ誰も登録されていません。</p>
+                {!session.isActive ? (
+                  // セッション外のときは表示を消してすっきり
+                  <div className="text-[11px] text-foreground/45 bg-foreground/5 border border-foreground/5 rounded-xl p-3 leading-relaxed text-center font-medium select-none">
+                    セッション開始後に、参加メンバーのロッカーメモがここにそっと表示されます。
+                  </div>
                 ) : (
-                  persons.map(p => {
-                    const isSessionActiveParticipant = session.isActive && session.activePersonIds.includes(p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        className={`p-3 rounded-xl border transition-all ${
-                          isSessionActiveParticipant
-                            ? 'bg-slate-500/5 dark:bg-slate-900/80 border-neon-green/20'
-                            : 'bg-slate-500/5 dark:bg-slate-900/40 border-foreground/5'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-sm text-foreground/90">{p.displayName}</span>
-                            {isSessionActiveParticipant && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
-                            )}
+                  // セッション中のときは参加メンバーだけを表示
+                  (() => {
+                    const activePersons = persons.filter(p => session.activePersonIds.includes(p.id));
+                    if (activePersons.length === 0) {
+                      return <p className="text-xs text-foreground/30 italic py-2 text-center">参加メンバーが選択されていません。</p>;
+                    }
+                    return activePersons.map(p => {
+                      return (
+                        <div
+                          key={p.id}
+                          className="p-3 rounded-xl border bg-slate-500/5 dark:bg-slate-900/80 border-neon-green/20 transition-all"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-sm text-foreground/90">{p.displayName}</span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+                            </div>
+                            <button
+                              onClick={() => deletePerson(p.id)}
+                              className="p-1 rounded hover:bg-foreground/5 text-foreground/30 hover:text-rose-400 transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => deletePerson(p.id)}
-                            className="p-1 rounded hover:bg-foreground/5 text-foreground/30 hover:text-rose-400 transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
 
-                        {editingPersonId === p.id ? (
-                          <div className="mt-2 space-y-1.5">
-                            <textarea
-                              value={editingMemo}
-                              onChange={(e) => setEditingMemo(e.target.value)}
-                              placeholder="メモを入力..."
-                              rows={2}
-                              className="w-full text-xs bg-background/50 border border-foreground/10 rounded-lg p-2 text-foreground focus:outline-none focus:border-neon-green resize-none"
-                            />
-                            <div className="flex justify-end gap-1.5">
-                              <button
-                                onClick={() => setEditingPersonId(null)}
-                                className="px-2.5 py-1 bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 rounded-md text-[10px] font-bold"
-                              >
-                                取消
-                              </button>
-                              <button
-                                onClick={() => saveEditingMemo(p.id, p)}
-                                className="px-2.5 py-1 bg-neon-green hover:bg-emerald-500 text-background dark:text-slate-950 rounded-md text-[10px] font-bold"
-                              >
-                                保存
-                              </button>
+                          {editingPersonId === p.id ? (
+                            <div className="mt-2 space-y-1.5">
+                              <textarea
+                                value={editingMemo}
+                                onChange={(e) => setEditingMemo(e.target.value)}
+                                placeholder="メモを入力..."
+                                rows={2}
+                                className="w-full text-xs bg-background/50 border border-foreground/10 rounded-lg p-2 text-foreground focus:outline-none focus:border-neon-green resize-none"
+                              />
+                              <div className="flex justify-end gap-1.5">
+                                <button
+                                  onClick={() => setEditingPersonId(null)}
+                                  className="px-2.5 py-1 bg-foreground/5 hover:bg-foreground/10 border border-foreground/5 rounded-md text-[10px] font-bold"
+                                >
+                                  取消
+                                </button>
+                                <button
+                                  onClick={() => saveEditingMemo(p.id, p)}
+                                  className="px-2.5 py-1 bg-neon-green hover:bg-emerald-500 text-background dark:text-slate-950 rounded-md text-[10px] font-bold"
+                                >
+                                  保存
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p
+                              onClick={() => startEditingMemo(p)}
+                              className="text-xs text-foreground/50 mt-1.5 cursor-pointer hover:bg-foreground/5 p-1.5 rounded-lg border border-dashed border-transparent hover:border-foreground/10 min-h-[28px] break-all leading-relaxed"
+                            >
+                              {p.memo ? p.memo : <span className="text-foreground/20 italic">クリックしてメモを追加...</span>}
+                            </p>
+                          )}
+                          
+                          <div className="flex justify-between items-center text-[10px] text-foreground/30 mt-2.5 pt-2 border-t border-foreground/5">
+                            <span className="flex items-center gap-1">
+                              <span>聞かれたお題:</span>
+                              <span className="font-bold text-foreground/50">{p.usedCardIds.length}枚</span>
+                            </span>
+
+                            <div className="flex items-center gap-1.5">
+                              {/* 個別リセットボタン */}
+                              {p.usedCardIds.length > 0 && (
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`${p.displayName} さんの会話履歴（人物墓地）のみをリセットします。よろしいですか？`)) {
+                                      resetPersonUsedCards(p.id);
+                                    }
+                                  }}
+                                  className="p-1 rounded hover:bg-foreground/5 text-foreground/30 hover:text-neon-green transition-all"
+                                  title="この人の使用履歴をリセット"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+
+                              {/* アコーディオン開閉ボタン */}
+                              {p.usedCardIds.length > 0 && (
+                                <button
+                                  onClick={() => togglePersonExpand(p.id)}
+                                  className="p-1 rounded hover:bg-foreground/5 text-foreground/30 hover:text-foreground transition-all flex items-center gap-0.5"
+                                  title={expandedPersonIds[p.id] ? "履歴を閉じる" : "履歴を展開"}
+                                >
+                                  <span className="text-[9px] font-mono">履歴</span>
+                                  {expandedPersonIds[p.id] ? (
+                                    <ChevronUp className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <ChevronDown className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              )}
                             </div>
                           </div>
-                        ) : (
-                          <p
-                            onClick={() => startEditingMemo(p)}
-                            className="text-xs text-foreground/50 mt-1.5 cursor-pointer hover:bg-foreground/5 p-1.5 rounded-lg border border-dashed border-transparent hover:border-foreground/10 min-h-[28px] break-all leading-relaxed"
-                          >
-                            {p.memo ? p.memo : <span className="text-foreground/20 italic">クリックしてメモを追加...</span>}
-                          </p>
-                        )}
-                        
-                        <div className="flex justify-between items-center text-[10px] text-foreground/30 mt-1">
-                          <span>聞かれたカード: {p.usedCardIds.length}枚</span>
+
+                          {/* 会話履歴バッジリスト（アコーディオン） */}
+                          {expandedPersonIds[p.id] && p.usedCardIds.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-dashed border-foreground/5 flex flex-wrap gap-1 max-h-24 overflow-y-auto animate-fade-in">
+                              {p.usedCardIds.map(cardId => {
+                                const cardObj = cards.find(c => c.id === cardId);
+                                if (!cardObj) return null;
+                                const displayTagText = cardObj.title || (cardObj.text.length > 8 ? cardObj.text.substring(0, 7) + '…' : cardObj.text);
+                                return (
+                                  <span
+                                    key={cardId}
+                                    className="text-[9px] px-1.5 py-0.5 rounded bg-foreground/5 border border-foreground/5 text-foreground/60 font-medium cursor-help transition-all hover:bg-foreground/10 hover:text-foreground"
+                                    title={cardObj.text}
+                                  >
+                                    {displayTagText}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    });
+                  })()
                 )}
               </div>
             </div>
@@ -354,6 +526,53 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   onChange={(e) => setNewPersonName(e.target.value)}
                   className="w-full text-xs bg-background/50 border border-foreground/10 rounded-lg p-2.5 text-foreground focus:outline-none focus:border-neon-green"
                 />
+
+                {/* すでに登録済みの類似人物の入力サジェスト */}
+                {newPersonName.trim() && (() => {
+                  const query = newPersonName.trim().toLowerCase();
+                  const suggestion = persons.find(p => 
+                    p.displayName.toLowerCase().includes(query) || 
+                    p.aliases.some(a => a.toLowerCase().includes(query))
+                  );
+                  if (suggestion) {
+                    return (
+                      <div className="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 rounded-lg flex flex-col gap-1.5 animate-fade-in font-semibold">
+                        <div className="flex items-center justify-between">
+                          <span>💡 すでに「{suggestion.displayName}」さんが登録済みです</span>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewPersonName(suggestion.displayName);
+                              setNewPersonMemo(suggestion.memo || '');
+                            }}
+                            className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-200 text-[9px] font-black rounded transition-all cursor-pointer"
+                            title="この登録済みメンバーの情報をフォームに自動適用します"
+                          >
+                            サジェストを選択 ✍️
+                          </button>
+                          {isStartingSessionMode && !selectedPersonIds.includes(suggestion.id) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedPersonIds(prev => [...prev, suggestion.id]);
+                                setNewPersonName('');
+                                setNewPersonMemo('');
+                              }}
+                              className="px-2 py-1 bg-neon-green/20 hover:bg-neon-green/30 text-neon-green text-[9px] font-black rounded transition-all cursor-pointer"
+                              title="このメンバーをアクティブセッションに追加します"
+                            >
+                              参加に追加 🦑
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
                 <input
                   type="text"
                   placeholder="特徴メモ (例: スシ使い、キレキャリオン好き)"
@@ -408,14 +627,65 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               </div>
             </div>
 
-            {/* 表示サイズ（自動ウルトラ・レスポンシブ案内） */}
-            <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-2">
-              <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                表示サイズ (自動レスポンシブ)
+            {/* データ消失に関する重要な警告カード */}
+            <div className="rounded-2xl p-4 bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/20 dark:border-amber-900/30 space-y-2">
+              <label className="text-xs font-black text-amber-700 dark:text-amber-400 flex items-center gap-1.5 select-none">
+                ⚠️ ローカルデータに関する重要なお願い
               </label>
-              <div className="text-[11px] text-foreground/70 bg-foreground/5 border border-foreground/5 rounded-xl p-3 leading-relaxed">
-                ブラウザのウィンドウ幅を狭くするだけで、自動的に極小のコンパクトモード（Small: カード1枚 / Medium: カード2枚）へシームレスに変化しますわ。📐
+              <p className="text-[10px] text-foreground/80 dark:text-foreground/75 leading-relaxed font-medium">
+                本アプリはプライバシー保護のため、すべてのデータがブラウザのローカル（LocalStorage）のみに安全に保存されます。
+              </p>
+              <p className="text-[10px] text-amber-900 dark:text-amber-200 leading-relaxed font-bold">
+                そのため、ブラウザの「キャッシュや履歴・Cookieの消去」をおこなうと、お題カードやメンバーのロッカーメモがすべて完全に消去されてしまいます。
+              </p>
+              <p className="text-[10px] text-foreground/70 dark:text-foreground/50 leading-relaxed font-medium">
+                大切なデータを守るため、定期的に「完全保存 (JSON)」からバックアップファイルをPCにダウンロード保存することを強く推奨します。
+              </p>
+            </div>
+
+            {/* 完全フルバックアップ（JSON）エリア */}
+            <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground/90 flex items-center gap-1.5 select-none">
+                  📁 完全フルバックアップ (JSON)
+                </label>
+                <p className="text-[10px] text-foreground/45 leading-relaxed font-semibold">
+                  お題カード、ロッカーメモ、会話履歴、現在のセッション、およびUIテーマや各種キー設定を含む、コトバトラーでの全ての体験情報を一撃で完全パックして保存・復元します。
+                </p>
               </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {/* 完全保存 */}
+                <button
+                  type="button"
+                  onClick={exportJSON}
+                  className="py-2.5 px-3 bg-neon-green/10 hover:bg-neon-green/20 border border-neon-green/20 text-neon-green rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  title="すべての体験情報を1つのJSONファイルとしてPCに保存します"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  完全保存 (JSON)
+                </button>
+
+                {/* 完全復元 */}
+                <button
+                  type="button"
+                  onClick={handleJsonUploadClick}
+                  className="py-2.5 px-3 bg-neon-purple/10 hover:bg-neon-purple/20 border border-neon-purple/20 text-neon-purple rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  title="バックアップJSONファイルからすべての状態を完全に復元します"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  完全復元 (JSON)
+                </button>
+              </div>
+
+              {/* 隠しファイルインプット */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleJsonFileChange}
+                accept=".json"
+                className="hidden"
+              />
             </div>
 
             {/* 表示枚数設定 (Largeモード時のみ有効) */}
@@ -440,6 +710,25 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 </div>
               </div>
             )}
+
+            {/* 前回のメンバーを記憶するトグル */}
+            <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground/90">前回のメンバーを記憶</label>
+                  <p className="text-[10px] text-foreground/45">セッション開始時に前回のVC参加者を自動引き継ぎ</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={keepPreviousMembers}
+                    onChange={(e) => setKeepPreviousMembers(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-400/20 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 dark:after:bg-slate-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-green peer-checked:after:bg-background"></div>
+                </label>
+              </div>
+            </div>
 
             {/* キーボードショートカットトグル */}
             <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-4">

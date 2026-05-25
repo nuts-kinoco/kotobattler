@@ -20,8 +20,10 @@ export interface Person {
   id: string;
   displayName: string;
   aliases: string[]; // 表記揺れやOCR誤認対策
+  normalizedName: string; // OCR・検索用の表記正規化
   memo?: string;
   usedCardIds: string[]; // この人物に対して使用済みのカードID（人物墓地）
+  lastSeenAt?: string; // 直近セッション参加時刻
 }
 
 export interface Session {

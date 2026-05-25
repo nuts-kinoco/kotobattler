@@ -1,4 +1,4 @@
-import { Card, Deck, Person, Session } from '../types/deck';
+import { Card, Deck, Person, Session } from '../../types/deck';
 
 // 保存データのバージョン定義
 const CURRENT_VERSION = 1;
@@ -61,7 +61,8 @@ const KEYS = {
   DISPLAY_COUNT: 'squid_display_count',
   SHORTCUT_ENABLED: 'squid_shortcut_enabled',
   THEME: 'squid_theme',
-  DISPLAY_SIZE: 'squid_display_size'
+  DISPLAY_SIZE: 'squid_display_size',
+  KEEP_PREVIOUS_MEMBERS: 'squid_keep_previous_members'
 } as const;
 
 export const storage = {
@@ -72,7 +73,6 @@ export const storage = {
     return safeParse<Card[]>(data, fallback);
   },
   saveCards: (cards: Card[]): void => {
-    // localStorageの容量制限/運用ルール: バイナリデータの保存は禁止
     setItemWithVersion(KEYS.CARDS, cards);
   },
 
@@ -106,7 +106,7 @@ export const storage = {
     setItemWithVersion(KEYS.SESSION, session);
   },
 
-  // --- 設定値の永続化（シンプルかつ安全） ---
+  // --- 設定値の永続化 ---
   loadTheme: (fallback: 'dark' | 'light'): 'dark' | 'light' => {
     if (typeof window === 'undefined') return fallback;
     const theme = localStorage.getItem(KEYS.THEME);
@@ -162,6 +162,19 @@ export const storage = {
   saveCurrentDeckId: (deckId: string): void => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(KEYS.CURRENT_DECK_ID, deckId);
+    }
+  },
+
+  loadKeepPreviousMembers: (fallback: boolean): boolean => {
+    if (typeof window === 'undefined') return fallback;
+    const data = localStorage.getItem(KEYS.KEEP_PREVIOUS_MEMBERS);
+    if (data === 'true') return true;
+    if (data === 'false') return false;
+    return fallback;
+  },
+  saveKeepPreviousMembers: (keep: boolean): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(KEYS.KEEP_PREVIOUS_MEMBERS, String(keep));
     }
   },
 

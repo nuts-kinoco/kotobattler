@@ -3,6 +3,7 @@ import { Card, Deck, Person, Session, AirSuitability, CardState } from '../types
 import { STARTER_CARDS, STARTER_DECKS } from '../data/starterDeck';
 import { storage } from '../services/storage';
 import { backupService } from '../services/backup';
+import { importService } from '../services/import';
 
 export const useDeckState = () => {
   // ==========================================
@@ -32,6 +33,7 @@ export const useDeckState = () => {
   const [cardDisplayCount, setCardDisplayCount] = useState<number>(3);
   const [shortcutEnabled, setShortcutEnabled] = useState<boolean>(true);
   const [selectedAirSuitability, setSelectedAirSuitability] = useState<AirSuitability | 'All'>('All');
+  const [keepPreviousMembers, setKeepPreviousMembers] = useState<boolean>(true);
   
   // データ破損（パースエラー等）を検知してユーザーに通知・復元を促すためのフラグ
   const [isDataCorrupted, setIsDataCorrupted] = useState<boolean>(false);
@@ -52,7 +54,7 @@ export const useDeckState = () => {
         setCardDisplayCount(2);
       } else {
         setDisplaySize('large');
-        // Large時はご主人様の設定した枚数（デフォルト3）にする
+        // Large時はユーザーの設定した枚数（デフォルト3）にする
         const storedCount = storage.loadDisplayCount(3);
         setCardDisplayCount(storedCount);
       }
@@ -78,6 +80,7 @@ export const useDeckState = () => {
       const loadedDisplayCount = storage.loadDisplayCount(3);
       const loadedShortcut = storage.loadShortcutEnabled(true);
       const loadedTheme = storage.loadTheme('dark');
+      const loadedKeepPrevious = storage.loadKeepPreviousMembers(true);
 
       // 2. 状態へのセット
       setCards(loadedCards);
@@ -87,6 +90,7 @@ export const useDeckState = () => {
       setCurrentDeckId(loadedDeckId);
       setShortcutEnabled(loadedShortcut);
       setTheme(loadedTheme);
+      setKeepPreviousMembers(loadedKeepPrevious);
 
       // 初回テーマのCSSクラス適用
       applyTheme(loadedTheme);
@@ -159,6 +163,11 @@ export const useDeckState = () => {
     applyTheme(newTheme);
   };
 
+  const handleSetKeepPreviousMembers = (keep: boolean) => {
+    setKeepPreviousMembers(keep);
+    storage.saveKeepPreviousMembers(keep);
+  };
+
   // --- アプリの完全な初期化・リセットアクション (フォールバック安全策) ---
   const resetAllData = () => {
     storage.clearAll();
@@ -174,6 +183,7 @@ export const useDeckState = () => {
     setTheme('dark');
     applyTheme('dark');
     setIsDataCorrupted(false);
+    setKeepPreviousMembers(true);
     
     setTimeout(() => {
       drawCards(3);
@@ -193,7 +203,7 @@ export const useDeckState = () => {
     const deckCards = cards.filter(c => currentDeck.cardIds.includes(c.id));
     
     return deckCards.filter(card => {
-      if (card.state === 'sealed') return false;
+      if (card.state === 'sealed' || card.state === 'used') return false;
 
       if (selectedAirSuitability !== 'All' && card.airSuitability !== selectedAirSuitability) {
         return false;
@@ -244,6 +254,31 @@ export const useDeckState = () => {
     }
   }, [currentDeckId, selectedAirSuitability, cardDisplayCount, cards.length, decks.length]);
 
+  // --- お題（使用状態）のクリア・リセットアクション ---
+  const resetUsedCards = useCallback(() => {
+    const updatedCards = cards.map(c => 
+      c.state === 'used' ? { ...c, state: 'unused' as CardState } : c
+    );
+    saveCards(updatedCards);
+    
+    if (session.isActive) {
+      saveSession({
+        ...session,
+        usedCardIds: []
+      });
+    }
+
+    const updatedPersons = persons.map(p => ({
+      ...p,
+      usedCardIds: []
+    }));
+    savePersons(updatedPersons);
+
+    setTimeout(() => {
+      drawCards(cardDisplayCount);
+    }, 50);
+  }, [cards, session, persons, cardDisplayCount, drawCards]);
+
   // ==========================================
   // 7. アクション系関数 (Card用)
   // ==========================================
@@ -280,8 +315,12 @@ export const useDeckState = () => {
       usedCardIds: newUsedIds
     });
 
-    const remainingActiveIds = activeCardIds.filter(id => id !== cardId);
-    drawCards(cardDisplayCount, remainingActiveIds);
+    // カードの 'used' ステート更新コミットを先行させ、
+    // AnimatePresence が正しい exit アニメーション（真上へ飛ぶ）をフックできるようにディレイを設ける
+    setTimeout(() => {
+      const remainingActiveIds = activeCardIds.filter(id => id !== cardId);
+      drawCards(cardDisplayCount, remainingActiveIds);
+    }, 60);
 
   }, [cards, persons, session, activeCardIds, cardDisplayCount, drawCards]);
 
@@ -298,9 +337,17 @@ export const useDeckState = () => {
   // 8. セッション管理
   // ==========================================
   const startSession = (personIds: string[]) => {
+    const nowStr = new Date().toISOString();
+    
+    // セッション参加メンバーの lastSeenAt を更新
+    const updatedPersons = persons.map(p => 
+      personIds.includes(p.id) ? { ...p, lastSeenAt: nowStr } : p
+    );
+    savePersons(updatedPersons);
+
     const newSession: Session = {
       isActive: true,
-      startTime: new Date().toISOString(),
+      startTime: nowStr,
       activePersonIds: personIds,
       usedCardIds: []
     };
@@ -311,7 +358,7 @@ export const useDeckState = () => {
   const endSession = () => {
     const newSession: Session = {
       isActive: false,
-      activePersonIds: [],
+      activePersonIds: session.activePersonIds,
       usedCardIds: []
     };
     saveSession(newSession);
@@ -322,12 +369,15 @@ export const useDeckState = () => {
   // 9. 人物プロフィール管理 (拡張性を確保)
   // ==========================================
   const addPerson = (displayName: string, aliases: string[], memo?: string) => {
+    const normalizedName = displayName.toLowerCase().replace(/\s/g, "");
     const newPerson: Person = {
       id: `p-${Date.now()}`,
       displayName,
       aliases: aliases.filter(a => a.trim() !== ''),
+      normalizedName,
       memo,
-      usedCardIds: []
+      usedCardIds: [],
+      lastSeenAt: new Date().toISOString()
     };
     const newPersons = [...persons, newPerson];
     savePersons(newPersons);
@@ -342,11 +392,58 @@ export const useDeckState = () => {
   };
 
   const updatePerson = (id: string, displayName: string, aliases: string[], memo?: string) => {
-    const newPersons = persons.map(p => 
-      p.id === id ? { ...p, displayName, aliases: aliases.filter(a => a.trim() !== ''), memo } : p
-    );
+    const nowStr = new Date().toISOString();
+    const newPersons = persons.map(p => {
+      if (p.id === id) {
+        const oldName = p.displayName;
+        const normalizedName = displayName.toLowerCase().replace(/\s/g, "");
+        
+        // 別名のマージ処理（旧名を aliases に蓄積、重複排除、空文字排除）
+        let updatedAliases = [...(aliases || p.aliases || [])];
+        if (oldName !== displayName && !updatedAliases.includes(oldName)) {
+          updatedAliases.push(oldName);
+        }
+        updatedAliases = Array.from(new Set(updatedAliases.map(a => a.trim()).filter(Boolean)));
+
+        return {
+          ...p,
+          displayName,
+          aliases: updatedAliases,
+          normalizedName,
+          memo,
+          lastSeenAt: nowStr
+        };
+      }
+      return p;
+    });
     savePersons(newPersons);
   };
+
+  // --- 特定の人物のみの会話履歴（人物墓地）クリアアクション ---
+  const resetPersonUsedCards = useCallback((personId: string) => {
+    const updatedPersons = persons.map(p => 
+      p.id === personId ? { ...p, usedCardIds: [] } : p
+    );
+    savePersons(updatedPersons);
+
+    // 再ドローしてプールを更新
+    setTimeout(() => {
+      drawCards(cardDisplayCount);
+    }, 50);
+  }, [persons, cardDisplayCount, drawCards]);
+
+  // --- 特定の人物の会話履歴から個別のお題を削除するアクション ---
+  const removePersonUsedCard = useCallback((personId: string, cardId: string) => {
+    const updatedPersons = persons.map(p => 
+      p.id === personId ? { ...p, usedCardIds: p.usedCardIds.filter(id => id !== cardId) } : p
+    );
+    savePersons(updatedPersons);
+
+    // 再ドローしてプールを更新
+    setTimeout(() => {
+      drawCards(cardDisplayCount);
+    }, 50);
+  }, [persons, cardDisplayCount, drawCards]);
 
   const deletePerson = (id: string) => {
     const newPersons = persons.filter(p => p.id !== id);
@@ -441,7 +538,7 @@ export const useDeckState = () => {
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         
-        const row = backupService.parseCSVLine(lines[i]);
+        const row = importService.parseCSVLine(lines[i]);
         if (row.length === 0 || !row[textIdx]) continue;
 
         const text = row[textIdx].trim();
@@ -516,7 +613,7 @@ export const useDeckState = () => {
   };
 
   const handleImportJSON = (jsonText: string): boolean => {
-    const success = backupService.importFromJSON(jsonText);
+    const success = importService.importFromJSON(jsonText);
     if (success) {
       // 読み込み完了後に各ステートを再リロード
       setCards(storage.loadCards(STARTER_CARDS));
@@ -531,6 +628,7 @@ export const useDeckState = () => {
       setTheme(loadedTheme);
       applyTheme(loadedTheme);
       setIsDataCorrupted(false);
+      setKeepPreviousMembers(storage.loadKeepPreviousMembers(true));
 
       // 自動リサイズで表示枚数がリセットされる
       const width = window.innerWidth;
@@ -565,6 +663,7 @@ export const useDeckState = () => {
     cardDisplayCount,
     shortcutEnabled,
     selectedAirSuitability,
+    keepPreviousMembers,
     drawPool,
     theme,
     displaySize,
@@ -577,6 +676,7 @@ export const useDeckState = () => {
     setCurrentDeckId: handleSetCurrentDeckId,
     setSelectedAirSuitability,
     setTheme: handleSetTheme,
+    setKeepPreviousMembers: handleSetKeepPreviousMembers,
     setIsDataCorrupted,
     
     // アクション
@@ -585,6 +685,7 @@ export const useDeckState = () => {
     skipCard,
     shuffleAll,
     resetAllData,
+    resetUsedCards,
     
     // セッション
     startSession,
@@ -594,6 +695,8 @@ export const useDeckState = () => {
     addPerson,
     updatePerson,
     deletePerson,
+    resetPersonUsedCards,
+    removePersonUsedCard,
     
     // カード
     addCard,

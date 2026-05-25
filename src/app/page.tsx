@@ -6,16 +6,17 @@ import { useShortcuts } from '../hooks/useShortcuts';
 import { CardDeck } from '../components/CardDeck';
 import { SidePanel } from '../components/SidePanel';
 import { DeckManager } from '../components/DeckManager';
+import { MemberManager } from '../components/MemberManager';
 import { 
-  Keyboard, BookOpen, Library, RefreshCw, CheckCircle2, ChevronRight, Sliders
+  Keyboard, BookOpen, Library, RefreshCw, CheckCircle2, ChevronRight, Sliders, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
   const state = useDeckState();
   
-  // アプリモード: 'main' (VCカード画面), 'manage' (カードロッカー管理)
-  const [appMode, setAppMode] = useState<'main' | 'manage'>('main');
+  // アプリモード: 'main' (VCカード画面), 'manage' (カードロッカー管理), 'members' (メンバー整理ロッカー)
+  const [appMode, setAppMode] = useState<'main' | 'manage' | 'members'>('main');
 
   // サイドパネルの開閉
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
@@ -25,6 +26,10 @@ export default function Home() {
 
   // トースト通知メッセージ
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // 空気メモ編集中の Person ID と入力テキスト
+  const [activeMemoPersonId, setActiveMemoPersonId] = useState<string | null>(null);
+  const [quickMemoText, setQuickMemoText] = useState<string>('');
 
   // トースト表示用のタイマー管理
   useEffect(() => {
@@ -40,6 +45,13 @@ export default function Home() {
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
   }, []);
+
+  // クイックメモ保存用コールバック
+  const handleSaveQuickMemo = useCallback((personId: string, person: any) => {
+    state.updatePerson(personId, person.displayName, person.aliases || [], quickMemoText.trim());
+    setActiveMemoPersonId(null);
+    showToast(`${person.displayName} さんのメモを更新しました 🦑`);
+  }, [state, quickMemoText, showToast]);
 
   // カードのフリップ切り替え
   const handleToggleFlip = useCallback((cardId: string) => {
@@ -124,7 +136,7 @@ export default function Home() {
                 <div className="flex items-center space-x-2">
                   <h1 className="font-black text-foreground tracking-wide text-xs sm:text-sm text-neon-green">Kotobattler</h1>
                   {!isSmall && (
-                    <span className="text-[9px] bg-neon-green/10 text-neon-green font-bold px-1.5 py-0.5 rounded border border-neon-green/20">v0.6</span>
+                    <span className="text-[9px] bg-neon-green/10 text-neon-green font-bold px-1.5 py-0.5 rounded border border-neon-green/20">v0.1</span>
                   )}
                 </div>
                 {!isSmall && (
@@ -152,6 +164,17 @@ export default function Home() {
                 </button>
               )}
               
+              {!isSmall && (
+                <button
+                  onClick={() => setAppMode('members')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl glass-panel-light hover:bg-foreground/5 text-foreground/80 border border-foreground/5 transition-all"
+                  title="メンバー整理ロッカーを開きます"
+                >
+                  <Users className="w-3.5 h-3.5 text-neon-green" />
+                  <span className="hidden sm:inline">メンバー</span>
+                </button>
+              )}
+              
               <button
                 onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all ${
@@ -165,6 +188,84 @@ export default function Home() {
               </button>
             </div>
           </header>
+
+          {/* === アクティブなVC参加メンバー ＆ 空気メモポップオーバー === */}
+          {state.session.isActive && state.session.activePersonIds.length > 0 && (
+            <div className="mt-3 px-4 py-2 bg-foreground/5 border border-foreground/5 rounded-2xl flex flex-wrap items-center gap-2 shrink-0 select-none animate-fade-in">
+              <span className="text-[10px] text-foreground/35 font-bold uppercase tracking-widest font-mono mr-1.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+                Active VC:
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {state.persons
+                  .filter(p => state.session.activePersonIds.includes(p.id))
+                  .map(p => {
+                    const isEditing = activeMemoPersonId === p.id;
+                    return (
+                      <div key={p.id} className="relative">
+                        {/* メンバー名バッジ */}
+                        <button
+                          onClick={() => {
+                            if (activeMemoPersonId === p.id) {
+                              setActiveMemoPersonId(null);
+                            } else {
+                              setActiveMemoPersonId(p.id);
+                              setQuickMemoText(p.memo || '');
+                            }
+                          }}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all border flex items-center gap-1.5 ${
+                            isEditing
+                              ? 'bg-neon-green/10 border-neon-green/35 text-neon-green font-extrabold shadow-sm'
+                              : 'glass-panel-light hover:bg-foreground/5 text-foreground/75 hover:text-foreground border-foreground/5'
+                          }`}
+                          title={`${p.displayName} さんのロッカーメモを編集`}
+                        >
+                          <span className="text-xs">👤</span>
+                          <span>{p.displayName}</span>
+                          {p.memo && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-neon-green" />
+                          )}
+                        </button>
+
+                        {/* 空気メモポップオーバー (極小フローティング) */}
+                        {isEditing && (
+                          <div className="absolute top-8 left-0 z-40 w-52 p-2.5 rounded-xl glass-panel border border-neon-green/30 shadow-xl space-y-1.5 animate-fade-in">
+                            <div className="flex justify-between items-center text-[9px] text-foreground/45 font-bold">
+                              <span>✍️ {p.displayName} さんの空気メモ</span>
+                            </div>
+                            <input
+                              type="text"
+                              value={quickMemoText}
+                              onChange={(e) => setQuickMemoText(e.target.value)}
+                              onBlur={() => handleSaveQuickMemo(p.id, p)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleSaveQuickMemo(p.id, p);
+                                } else if (e.key === 'Escape') {
+                                  setActiveMemoPersonId(null);
+                                }
+                              }}
+                              placeholder="スシ使い、夜型、など..."
+                              autoFocus
+                              className="w-full text-xs bg-background/80 border border-foreground/10 rounded-lg p-2 text-foreground focus:outline-none focus:border-neon-green"
+                            />
+                            <div className="flex justify-between items-center text-[8px] text-foreground/30 leading-none">
+                              <span>[Enter] / 枠外クリックで保存</span>
+                              <button
+                                onMouseDown={() => handleSaveQuickMemo(p.id, p)}
+                                className="text-[9px] font-black text-neon-green hover:underline"
+                              >
+                                保存
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
 
           {/* === データ破損・不整合検知時の安全な復元バナー === */}
           {state.isDataCorrupted && (
@@ -217,6 +318,7 @@ export default function Home() {
               flippedStates={flippedStates}
               onToggleFlip={handleToggleFlip}
               displaySize={state.displaySize}
+              onResetUsedCards={state.resetUsedCards}
             />
           </main>
 
@@ -232,13 +334,13 @@ export default function Home() {
               <button
                 onClick={state.shuffleAll}
                 disabled={state.activeCardIds.length === 0}
-                className={`rounded-2xl glass-panel-light hover:bg-foreground/5 border border-foreground/10 disabled:opacity-40 text-foreground/85 hover:text-foreground font-bold tracking-wider transition-all flex items-center justify-center gap-2 shadow-md ${
+                className={`rounded-2xl glass-panel-light hover:bg-foreground/5 border border-foreground/10 disabled:opacity-40 text-foreground/85 hover:text-foreground font-bold tracking-wider transition-all flex items-center justify-center gap-2 shadow-md whitespace-nowrap ${
                   isCompact ? 'py-3 px-3.5 flex-1' : 'py-3.5 px-4 flex-1 text-sm'
                 }`}
                 title="すべてのカードを引き直します [↓ キー]"
               >
                 <RefreshCw className="w-4 h-4 text-neon-purple shrink-0" />
-                {!isCompact && <span>引き直し</span>}
+                {!isCompact && <span className="whitespace-nowrap">引き直し</span>}
               </button>
 
               {/* 使った！ (Used) ボタン */}
@@ -248,13 +350,13 @@ export default function Home() {
                   if (activeId) handleUseCardWrapper(activeId);
                 }}
                 disabled={state.activeCardIds.length === 0}
-                className={`rounded-2xl bg-foreground/5 hover:bg-neon-green/10 border border-foreground/10 hover:border-neon-green/20 disabled:opacity-40 disabled:bg-slate-800 disabled:text-white/20 text-foreground hover:text-neon-green font-black tracking-widest transition-all flex items-center justify-center gap-2 shadow-md ${
+                className={`rounded-2xl bg-foreground/5 hover:bg-neon-green/10 border border-foreground/10 hover:border-neon-green/20 disabled:opacity-40 disabled:bg-slate-800 disabled:text-white/20 text-foreground hover:text-neon-green font-black tracking-widest transition-all flex items-center justify-center gap-2 shadow-md whitespace-nowrap ${
                   isCompact ? 'py-3 px-5 flex-[1.2]' : 'py-4 px-6 flex-[1.5] text-sm'
                 }`}
                 title="会話で使用したカードを消費します [↑ キー]"
               >
                 <CheckCircle2 className="w-4 h-4 fill-current shrink-0" />
-                {!isCompact ? <span>話した！</span> : <span>話した</span>}
+                {!isCompact && <span className="whitespace-nowrap">話した！</span>}
               </button>
 
               {/* パス (Skip) ボタン */}
@@ -264,13 +366,13 @@ export default function Home() {
                   if (activeId) handleSkipCardWrapper(activeId);
                 }}
                 disabled={state.activeCardIds.length === 0}
-                className={`rounded-2xl glass-panel-light hover:bg-foreground/5 border border-foreground/10 disabled:opacity-40 text-foreground/85 hover:text-foreground font-bold tracking-wider transition-all flex items-center justify-center gap-2 shadow-md ${
+                className={`rounded-2xl glass-panel-light hover:bg-foreground/5 border border-foreground/10 disabled:opacity-40 text-foreground/85 hover:text-foreground font-bold tracking-wider transition-all flex items-center justify-center gap-2 shadow-md whitespace-nowrap ${
                   isCompact ? 'py-3 px-3.5 flex-1' : 'py-3.5 px-4 flex-1 text-sm'
                 }`}
                 title="消費せず、このカードをパスします"
               >
                 <ChevronRight className="w-4 h-4 text-neon-green shrink-0" />
-                {!isCompact && <span>パス</span>}
+                {!isCompact && <span className="whitespace-nowrap">パス</span>}
               </button>
               
             </div>
@@ -285,10 +387,12 @@ export default function Home() {
                   <span className="font-semibold text-foreground/50">
                     {state.shortcutEnabled ? '片手操作ON' : '操作OFF'}
                   </span>
-                  {!isCompact && (
+                  {state.shortcutEnabled && (
                     <>
                       <span className="text-foreground/10">|</span>
-                      <span>Space: めくる / ↑: 話した / ↓: 引き直し / ← →: 切り替え</span>
+                      <span className="text-[10px] text-foreground/45 whitespace-nowrap">
+                        {isCompact ? 'Space:めくる / ↑:話す / ↓:シャッフル' : 'Space: めくる / ↑: 話した / ↓: 引き直し / ← →: 切り替え'}
+                      </span>
                     </>
                   )}
                 </div>
@@ -314,6 +418,7 @@ export default function Home() {
           <SidePanel
             isOpen={isSidePanelOpen}
             onClose={() => setIsSidePanelOpen(false)}
+            cards={state.cards}
             persons={state.persons}
             session={state.session}
             cardDisplayCount={state.cardDisplayCount}
@@ -321,18 +426,23 @@ export default function Home() {
             selectedAirSuitability={state.selectedAirSuitability}
             theme={state.theme}
             displaySize={state.displaySize}
+            keepPreviousMembers={state.keepPreviousMembers}
             setCardDisplayCount={state.setCardDisplayCount}
             setShortcutEnabled={state.setShortcutEnabled}
             setSelectedAirSuitability={state.setSelectedAirSuitability}
             setTheme={state.setTheme}
+            setKeepPreviousMembers={state.setKeepPreviousMembers}
             startSession={state.startSession}
             endSession={state.endSession}
             addPerson={state.addPerson}
             updatePerson={state.updatePerson}
             deletePerson={state.deletePerson}
+            resetPersonUsedCards={state.resetPersonUsedCards}
+            importJSON={state.importJSON}
+            exportJSON={state.exportJSON}
           />
         </div>
-      ) : (
+      ) : appMode === 'manage' ? (
         // ==================== カードロッカー管理画面 ====================
         <div className="flex-1 flex overflow-hidden">
           <DeckManager
@@ -347,8 +457,21 @@ export default function Home() {
             toggleCardSealed={state.toggleCardSealed}
             importCSV={state.importCSV}
             downloadCSV={state.downloadCSV}
-            importJSON={state.importJSON}
-            exportJSON={state.exportJSON}
+            showToast={showToast}
+          />
+        </div>
+      ) : (
+        // ==================== メンバー整理ロッカー画面 ====================
+        <div className="flex-1 flex overflow-hidden">
+          <MemberManager
+            cards={state.cards}
+            persons={state.persons}
+            onBackToApp={() => setAppMode('main')}
+            addPerson={state.addPerson}
+            updatePerson={state.updatePerson}
+            deletePerson={state.deletePerson}
+            resetPersonUsedCards={state.resetPersonUsedCards}
+            removePersonUsedCard={state.removePersonUsedCard}
             showToast={showToast}
           />
         </div>

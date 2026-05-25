@@ -19,8 +19,6 @@ interface DeckManagerProps {
   toggleCardSealed: (id: string) => void;
   importCSV: (csvText: string) => boolean;
   downloadCSV: () => void;
-  importJSON: (jsonText: string) => boolean;
-  exportJSON: () => void;
   showToast?: (msg: string) => void;
 }
 
@@ -36,8 +34,6 @@ export const DeckManager: React.FC<DeckManagerProps> = ({
   toggleCardSealed,
   importCSV,
   downloadCSV,
-  importJSON,
-  exportJSON,
   showToast
 }) => {
   // 編集モード
@@ -61,9 +57,6 @@ export const DeckManager: React.FC<DeckManagerProps> = ({
 
   // コピー・ダウンロード状態インジケータ
   const [downloading, setDownloading] = useState(false);
-  const [exportingJSON, setExportingJSON] = useState(false);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 選択デッキのカードID
   const selectedDeckCardIds = useMemo(() => {
@@ -172,45 +165,7 @@ export const DeckManager: React.FC<DeckManagerProps> = ({
     setTimeout(() => setDownloading(false), 600);
   };
 
-  // 統合JSONのダウンロード処理のトリガー
-  const handleJsonDownload = () => {
-    setExportingJSON(true);
-    exportJSON();
-    if (showToast) {
-      showToast('完全バックアップJSONをエクスポートしました 💾');
-    }
-    setTimeout(() => setExportingJSON(false), 600);
-  };
 
-  // 統合JSONファイルアップロード処理のトリガー
-  const handleJsonUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleJsonFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        const success = importJSON(text);
-        if (success) {
-          if (showToast) {
-            showToast('データを完全復元しました 💫');
-          } else {
-            alert('データを完全復元しました！');
-          }
-        } else {
-          alert('復元に失敗しました。Kotobattler の有効なバックアップJSONファイルかご確認ください。');
-        }
-      }
-      // 同じファイルを連続選択できるようにリセット
-      e.target.value = '';
-    };
-    reader.readAsText(file);
-  };
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-8 flex flex-col h-full space-y-6">
@@ -227,10 +182,10 @@ export const DeckManager: React.FC<DeckManagerProps> = ({
           </button>
           <div className="h-6 w-[1px] bg-foreground/10" />
           <div className="flex flex-col">
-            <h1 className="text-xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-neon-green to-neon-purple flex items-center gap-2">
+            <h1 className="text-xl font-black tracking-wider text-foreground/90 dark:text-foreground flex items-center gap-2">
               ⚙️ ロッカー整理 (カード管理)
             </h1>
-            {/* ご主人様指定のプライバシー注意書きを配置 (極めて静かで落ち着いたデザイン) */}
+            {/* ローカル保存に関するプライバシー注意書きを配置 (極めて静かで落ち着いたデザイン) */}
             <div className="text-[10px] text-foreground/45 flex items-center gap-1 mt-0.5 font-medium select-none">
               <Lock className="w-3 h-3 text-neon-green/70" />
               <span>データはブラウザ内にローカル保存されます。外部サーバへ送信されません。</span>
@@ -258,36 +213,6 @@ export const DeckManager: React.FC<DeckManagerProps> = ({
             >
               <Download className="w-3.5 h-3.5 text-foreground/50" />
               CSV書き出し
-            </button>
-          </div>
-
-          <div className="h-6 w-[1px] bg-foreground/10 mx-1" />
-
-          {/* 完全統合JSONバックアップ用 (初心者にも極めて優しい1ファイル復元/保存) */}
-          <div className="flex border border-neon-purple/20 rounded-xl overflow-hidden bg-neon-purple/5 shrink-0">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleJsonFileChange} 
-              accept=".json" 
-              className="hidden" 
-            />
-            <button
-              onClick={handleJsonUploadClick}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-neon-purple hover:bg-neon-purple/10 border-r border-neon-purple/20 transition-all"
-              title="人物メモや設定なども含めた Kotobattler バックアップファイルを読み込み復元します"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              完全復元 (JSON)
-            </button>
-            <button
-              onClick={handleJsonDownload}
-              disabled={exportingJSON}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-neon-purple hover:bg-neon-purple/10 transition-all"
-              title="カード、人物、履歴、設定をすべて含んだ完全なバックアップファイルを書き出します"
-            >
-              <Download className="w-3.5 h-3.5" />
-              {exportingJSON ? '保存中...' : '完全保存 (JSON)'}
             </button>
           </div>
         </div>

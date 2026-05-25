@@ -1,36 +1,36 @@
 @import "tailwindcss";
 
-/* ==================== 1. デフォルト ＆ ダークテーマ (視認性向上リッチグレー) ==================== */
+/* ==================== 1. デフォルト ＆ ダークテーマ (モノクローム・サイレントインク) ==================== */
 :root {
-  --background: #151820;
-  --foreground: #F3F4F6; /* 高コントラスト・明るいオフホワイト */
+  --background: #0E0E12; /* 青みを完全に排した、黒漆のような漆黒 */
+  --foreground: #F3F3F7; /* 高コントラストな純プラチナホワイト */
   
-  --glass-bg: rgba(26, 31, 44, 0.8);
+  --glass-bg: rgba(20, 20, 24, 0.85); /* 無彩色の半透明スモークガラス */
   --glass-border: rgba(255, 255, 255, 0.08);
   
-  /* Apple風の上品で落ち着いたパステルカラー */
-  --accent-neon-green: #88C9A1;  /* パステルセージグリーン */
-  --accent-neon-purple: #B9AEDF; /* パステルラベンダー */
-  --accent-neon-yellow: #F0D288; /* 優しいパステルゴールド */
+  /* 上品で落ち着いたモノクローム連動アクセント */
+  --accent-neon-green: #88C9A1;
+  --accent-neon-purple: #B9AEDF;
+  --accent-neon-yellow: #F0D288;
   
   --color-unused: #7DB2F4;
   --color-used: #88C9A1;
   --color-skip: #E5A93C;
   
-  --card-bg: rgba(30, 36, 48, 0.92);
-  --card-border: rgba(255, 255, 255, 0.09);
-  --card-shadow: 0 12px 45px -12px rgba(0, 0, 0, 0.45);
+  --card-bg: rgba(24, 24, 28, 0.95); /* 青みを排した純スモークブラックガラス */
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 16px 45px -12px rgba(0, 0, 0, 0.6);
   
-  --ink-pattern-bg: #151820;
-  --ink-pattern-dot1: rgba(136, 201, 161, 0.012);
-  --ink-pattern-dot2: rgba(185, 174, 223, 0.012);
+  --ink-pattern-bg: #0E0E12;
+  --ink-pattern-dot1: rgba(255, 255, 255, 0.008);
+  --ink-pattern-dot2: rgba(255, 255, 255, 0.008);
 }
 
 .dark {
-  --background: #151820;
-  --foreground: #F3F4F6;
+  --background: #0E0E12;
+  --foreground: #F3F3F7;
   
-  --glass-bg: rgba(26, 31, 44, 0.8);
+  --glass-bg: rgba(20, 20, 24, 0.85);
   --glass-border: rgba(255, 255, 255, 0.08);
   
   --accent-neon-green: #88C9A1;
@@ -41,35 +41,110 @@
   --color-used: #88C9A1;
   --color-skip: #E5A93C;
   
-  --card-bg: rgba(30, 36, 48, 0.92);
-  --card-border: rgba(255, 255, 255, 0.09);
+  --card-bg: rgba(24, 24, 28, 0.95);
+  --card-border: rgba(255, 255, 255, 0.08);
   
-  --ink-pattern-bg: #151820;
+  --ink-pattern-bg: #0E0E12;
 }
 
-/* ==================== 2. ライトテーマ (Apple風ソフトパステルグレー) ==================== */
+/* ==================== 2. ライトテーマ (無彩色プラチナホワイト) ==================== */
 .light {
-  --background: #F4F4F6;
-  --foreground: #1D1D1F; /* 目に優しいダークチャコール */
+  --background: #F5F5F7; /* 純白ではなく、目に優しいプラチナソフトグレー */
+  --foreground: #1C1C1E; /* 純粋なダークチャコール・最高濃度の黒 */
   
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(0, 0, 0, 0.07);
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(0, 0, 0, 0.08);
   
-  --accent-neon-green: #529E71;  /* 少し濃いめの落ち着いたパステルグリーン */
-  --accent-neon-purple: #8675BE; /* 少し濃いめのパステルパープル */
-  --accent-neon-yellow: #C69A3B;
+  --accent-neon-green: #4C8E64;
+  --accent-neon-purple: #7866AE;
+  --accent-neon-yellow: #B68A2B;
   
   --color-unused: #4F86C6;
-  --color-used: #529E71;
-  --color-skip: #C69A3B;
+  --color-used: #4C8E64;
+  --color-skip: #B68A2B;
   
-  --card-bg: rgba(255, 255, 255, 0.98);
-  --card-border: rgba(0, 0, 0, 0.09);
-  --card-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.07);
+  --card-bg: rgba(255, 255, 255, 0.98); /* 青みを完全に排した高精細純白ガラス */
+  --card-border: rgba(0, 0, 0, 0.07);
+  --card-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.05);
   
-  --ink-pattern-bg: #F4F4F6;
-  --ink-pattern-dot1: rgba(82, 158, 113, 0.015);
-  --ink-pattern-dot2: rgba(134, 117, 190, 0.015);
+  --ink-pattern-bg: #F5F5F7;
+  --ink-pattern-dot1: rgba(0, 0, 0, 0.01);
+  --ink-pattern-dot2: rgba(0, 0, 0, 0.01);
+}
+
+/* ==================== 3. ライトテーマでの視認性・コントラスト強化 (人間に優しいコントラスト) ==================== */
+.light {
+  /* 背景をもう少し白くして文字の読みやすさをアップ */
+  --background: #F5F6F8;
+  --foreground: #1D1D1F;
+}
+
+/* ライトモード時のガラス背景を明るく不透明にし、文字とのコントラストを高める */
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+}
+
+.light .glass-panel-light {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+/* ライトモード時の Tailwind 透過テキストクラスのフォールバック (視認性大幅アップ) */
+.light .text-foreground\/80 {
+  color: rgba(29, 29, 31, 0.92) !important;
+}
+.light .text-foreground\/75 {
+  color: rgba(29, 29, 31, 0.88) !important;
+}
+.light .text-foreground\/50 {
+  color: rgba(29, 29, 31, 0.75) !important;
+}
+.light .text-foreground\/45 {
+  color: rgba(29, 29, 31, 0.72) !important; /* 薄いグレーではなく、しっかり読める明瞭なグレーに */
+}
+.light .text-foreground\/35 {
+  color: rgba(29, 29, 31, 0.65) !important;
+}
+.light .text-foreground\/30 {
+  color: rgba(29, 29, 31, 0.60) !important;
+}
+.light .text-foreground\/25 {
+  color: rgba(29, 29, 31, 0.55) !important;
+}
+.light .text-foreground\/20 {
+  color: rgba(29, 29, 31, 0.48) !important;
+}
+.light .text-foreground\/15 {
+  color: rgba(29, 29, 31, 0.38) !important;
+}
+.light .text-foreground\/10 {
+  color: rgba(29, 29, 31, 0.30) !important;
+}
+
+/* 各種バッジや入力欄の背景透過度を適正化 */
+.light .bg-foreground\/5 {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+.light .bg-foreground\/10 {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  border-color: rgba(0, 0, 0, 0.10) !important;
+}
+.light .bg-foreground\/2 {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+.light .border-foreground\/5 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+.light .border-foreground\/10 {
+  border-color: rgba(0, 0, 0, 0.14) !important;
+}
+
+/* ライトモード時のプレースホルダーを濃くする */
+.light ::placeholder {
+  color: rgba(29, 29, 31, 0.45) !important;
 }
 
 @theme inline {
