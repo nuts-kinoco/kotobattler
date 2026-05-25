@@ -37,28 +37,32 @@ export const useDeckState = () => {
   const [isDataCorrupted, setIsDataCorrupted] = useState<boolean>(false);
 
   // ==========================================
-  // 2. 物理リサイズ (コンパクトモード連動)
+  // 2. ウィンドウ幅の自動監視（ウルトラ・レスポンシブ）
   // ==========================================
-  const triggerPhysicalResize = (size: 'small' | 'medium' | 'large') => {
-    if (typeof window !== 'undefined') {
-      let width = 1024;
-      let height = 768;
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
-      if (size === 'small') {
-        width = 360;
-        height = 520;
-      } else if (size === 'medium') {
-        width = 540;
-        height = 700;
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 600) {
+        setDisplaySize('small');
+        setCardDisplayCount(1);
+      } else if (width < 960) {
+        setDisplaySize('medium');
+        setCardDisplayCount(2);
+      } else {
+        setDisplaySize('large');
+        // Large時はご主人様の設定した枚数（デフォルト3）にする
+        const storedCount = storage.loadDisplayCount(3);
+        setCardDisplayCount(storedCount);
       }
+    };
 
-      try {
-        window.resizeTo(width, height);
-      } catch (e) {
-        console.warn('ブラウザのセキュリティ制限によりウィンドウサイズを変更できませんでした。ポップアップ環境で有効になります。', e);
-      }
-    }
-  };
+    // 初期化時とリサイズ時に実行
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // ==========================================
   // 3. マウント時の初期化ロード (storageサービス経由)
@@ -74,7 +78,6 @@ export const useDeckState = () => {
       const loadedDisplayCount = storage.loadDisplayCount(3);
       const loadedShortcut = storage.loadShortcutEnabled(true);
       const loadedTheme = storage.loadTheme('dark');
-      const loadedSize = storage.loadDisplaySize('large');
 
       // 2. 状態へのセット
       setCards(loadedCards);
@@ -82,31 +85,17 @@ export const useDeckState = () => {
       setPersons(loadedPersons);
       setSession(loadedSession);
       setCurrentDeckId(loadedDeckId);
-      setCardDisplayCount(loadedDisplayCount);
       setShortcutEnabled(loadedShortcut);
       setTheme(loadedTheme);
-      setDisplaySize(loadedSize);
 
       // 初回テーマのCSSクラス適用
       applyTheme(loadedTheme);
-
-      // 初期サイズ別のカード表示枚数制御
-      if (loadedSize === 'small') {
-        setCardDisplayCount(1);
-      } else if (loadedSize === 'medium') {
-        setCardDisplayCount(2);
-      } else {
-        setCardDisplayCount(loadedDisplayCount);
-      }
 
       // 3. ロード中にデータのパースエラー等、不整合が検出されたか確認
       if (storage.hasLoadError()) {
         setIsDataCorrupted(true);
         storage.clearLoadError(); // 検知フラグをクリア
       }
-      
-      // ポップアップ物理サイズを遅延適用 (ブラウザロードタイミングへの配慮)
-      setTimeout(() => triggerPhysicalResize(loadedSize), 1000);
     }
   }, []);
 
@@ -170,24 +159,6 @@ export const useDeckState = () => {
     applyTheme(newTheme);
   };
 
-  const handleSetDisplaySize = (size: 'small' | 'medium' | 'large') => {
-    setDisplaySize(size);
-    storage.saveDisplaySize(size);
-    
-    // サイズ別表示枚数制御 (Small: 1枚, Medium: 2枚, Large: 前回の設定数)
-    if (size === 'small') {
-      setCardDisplayCount(1);
-    } else if (size === 'medium') {
-      setCardDisplayCount(2);
-    } else {
-      const prevCount = storage.loadDisplayCount(3);
-      setCardDisplayCount(prevCount);
-    }
-
-    // 物理ウィンドウリサイズのトリガー
-    triggerPhysicalResize(size);
-  };
-
   // --- アプリの完全な初期化・リセットアクション (フォールバック安全策) ---
   const resetAllData = () => {
     storage.clearAll();
@@ -201,13 +172,11 @@ export const useDeckState = () => {
     setCardDisplayCount(3);
     setShortcutEnabled(true);
     setTheme('dark');
-    setDisplaySize('large');
     applyTheme('dark');
     setIsDataCorrupted(false);
     
     setTimeout(() => {
       drawCards(3);
-      triggerPhysicalResize('large');
     }, 50);
   };
 
@@ -557,25 +526,27 @@ export const useDeckState = () => {
       
       const loadedDeckId = storage.loadCurrentDeckId('deck-all');
       const loadedTheme = storage.loadTheme('dark');
-      const loadedSize = storage.loadDisplaySize('large');
 
       setCurrentDeckId(loadedDeckId);
       setTheme(loadedTheme);
-      setDisplaySize(loadedSize);
       applyTheme(loadedTheme);
       setIsDataCorrupted(false);
 
-      if (loadedSize === 'small') {
+      // 自動リサイズで表示枚数がリセットされる
+      const width = window.innerWidth;
+      if (width < 600) {
         setCardDisplayCount(1);
-      } else if (loadedSize === 'medium') {
+        setDisplaySize('small');
+      } else if (width < 960) {
         setCardDisplayCount(2);
+        setDisplaySize('medium');
       } else {
         setCardDisplayCount(storage.loadDisplayCount(3));
+        setDisplaySize('large');
       }
 
       setTimeout(() => {
         drawCards(cardDisplayCount);
-        triggerPhysicalResize(loadedSize);
       }, 50);
     }
     return success;
@@ -606,7 +577,6 @@ export const useDeckState = () => {
     setCurrentDeckId: handleSetCurrentDeckId,
     setSelectedAirSuitability,
     setTheme: handleSetTheme,
-    setDisplaySize: handleSetDisplaySize,
     setIsDataCorrupted,
     
     // アクション

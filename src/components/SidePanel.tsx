@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
   X, Users, UserPlus, Play, Square, Settings, 
   HelpCircle, Sparkles, Filter, Plus, Trash2, Check,
-  Moon, Sun, Monitor, Maximize2
+  Moon, Sun
 } from 'lucide-react';
 import { Person, Session, AirSuitability } from '../types/deck';
 
@@ -22,7 +22,6 @@ interface SidePanelProps {
   setShortcutEnabled: (enabled: boolean) => void;
   setSelectedAirSuitability: (suitability: AirSuitability | 'All') => void;
   setTheme: (theme: 'dark' | 'light') => void;
-  setDisplaySize: (size: 'small' | 'medium' | 'large') => void;
   startSession: (personIds: string[]) => void;
   endSession: () => void;
   addPerson: (name: string, aliases: string[], memo?: string) => Person;
@@ -44,7 +43,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   setShortcutEnabled,
   setSelectedAirSuitability,
   setTheme,
-  setDisplaySize,
   startSession,
   endSession,
   addPerson,
@@ -195,9 +193,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => {
-                                setSelectedPersonIds(prev => 
-                                  isSelected ? prev.filter(id => id !== p.id) : [...prev, p.id]
-                                );
+                                  setSelectedPersonIds(prev => 
+                                    isSelected ? prev.filter(id => id !== p.id) : [...prev, p.id]
+                                  );
                               }}
                               className="hidden"
                             />
@@ -395,7 +393,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                       : 'bg-foreground/5 border-transparent text-foreground/60 hover:bg-foreground/10'
                   }`}
                 >
-                  <Moon className="w-4 h-4" />
                   Dark Theme
                 </button>
                 <button
@@ -406,35 +403,19 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                       : 'bg-foreground/5 border-transparent text-foreground/60 hover:bg-foreground/10'
                   }`}
                 >
-                  <Sun className="w-4 h-4" />
                   Light Theme
                 </button>
               </div>
             </div>
 
-            {/* 表示サイズ切替 (コンパクトモード) */}
-            <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-3">
+            {/* 表示サイズ（自動ウルトラ・レスポンシブ案内） */}
+            <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-2">
               <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
-                表示サイズ (コンパクトモード)
+                表示サイズ (自動レスポンシブ)
               </label>
-              <div className="grid grid-cols-3 gap-1">
-                {(['small', 'medium', 'large'] as const).map(size => (
-                  <button
-                    key={size}
-                    onClick={() => setDisplaySize(size)}
-                    className={`py-2 text-[10px] uppercase font-bold rounded-lg border transition-all text-center ${
-                      displaySize === size
-                        ? 'bg-neon-green/10 border-neon-green/30 text-neon-green'
-                        : 'bg-foreground/5 border-transparent text-foreground/60 hover:bg-foreground/10'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+              <div className="text-[11px] text-foreground/70 bg-foreground/5 border border-foreground/5 rounded-xl p-3 leading-relaxed">
+                ブラウザのウィンドウ幅を狭くするだけで、自動的に極小のコンパクトモード（Small: カード1枚 / Medium: カード2枚）へシームレスに変化しますわ。📐
               </div>
-              <p className="text-[10px] text-foreground/40 leading-relaxed mt-1">
-                Small/Medium (コンパクトモード) ではカードが中央の1枚のみになり、別アプリと横並びしやすくなります。
-              </p>
             </div>
 
             {/* 表示枚数設定 (Largeモード時のみ有効) */}
@@ -478,7 +459,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 </label>
               </div>
 
-              {/* ショートカット説明 (文言修正: 一般向けに丁寧に) */}
+              {/* ショートカット説明 */}
               <div className="space-y-2 pt-2 border-t border-foreground/5">
                 <span className="text-[10px] text-foreground/50 uppercase tracking-widest font-mono flex items-center gap-1">
                   <HelpCircle className="w-3.5 h-3.5 text-neon-green" /> Key Bindings
@@ -503,7 +484,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   </div>
                 </div>
 
-                <div className="text-[10px] text-[#1D1D1F] dark:text-amber-300 bg-white dark:bg-amber-950/20 border border-gray-200 dark:border-amber-900/30 rounded-lg p-2.5 leading-relaxed mt-2 shadow-sm dark:shadow-none">
+                <div className="text-[10px] text-slate-800 dark:text-amber-200 bg-slate-100 dark:bg-amber-950/20 border border-slate-200 dark:border-amber-900/30 rounded-lg p-2.5 leading-relaxed mt-2 shadow-sm dark:shadow-none font-semibold">
                   Discordや他アプリと並行して使用する場合は、ショートカットキーが意図せず入力されないようご注意ください。入力フォーム等にフォーカスがある時は自動的に機能が一時停止します。
                 </div>
               </div>

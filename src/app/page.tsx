@@ -7,8 +7,7 @@ import { CardDeck } from '../components/CardDeck';
 import { SidePanel } from '../components/SidePanel';
 import { DeckManager } from '../components/DeckManager';
 import { 
-  Sparkles, Sliders, Keyboard, BookOpen, 
-  Flame, Library, RefreshCw, CheckCircle2, ChevronRight
+  Keyboard, BookOpen, Library, RefreshCw, CheckCircle2, ChevronRight, Sliders
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -37,73 +36,10 @@ export default function Home() {
     }
   }, [toastMessage]);
 
-  // showToast の定義 (他の関数で使われるため上部に配置)
+  // showToast の定義
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
   }, []);
-
-  // ポップアップウィンドウ判定
-  const [isPopup, setIsPopup] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsPopup(window.name === 'KotobattlerPopup' || window.opener !== null);
-    }
-  }, []);
-
-  // 物理リサイズの自動引き戻し固定化ロジック (別窓起動時のみ動作し、手動リサイズを磁石のように弾く)
-  useEffect(() => {
-    if (!isPopup) return;
-
-    let resizeTimeout: NodeJS.Timeout;
-
-    const handleWindowResize = () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        let targetWidth = 1024;
-        let targetHeight = 768;
-
-        if (state.displaySize === 'small') {
-          targetWidth = 360;
-          targetHeight = 520;
-        } else if (state.displaySize === 'medium') {
-          targetWidth = 540;
-          targetHeight = 700;
-        }
-
-        // 手動で境界を動かされて規定サイズとズレた場合、強制的に引き戻す
-        if (window.innerWidth !== targetWidth || window.innerHeight !== targetHeight) {
-          try {
-            window.resizeTo(targetWidth, targetHeight);
-          } catch (e) {
-            // エラー抑止
-          }
-        }
-      }, 50);
-    };
-
-    window.addEventListener('resize', handleWindowResize);
-    return () => {
-      window.removeEventListener('resize', handleWindowResize);
-      clearTimeout(resizeTimeout);
-    };
-  }, [isPopup, state.displaySize]);
-
-  // 別窓（ポップアップ）で開く (手動サイズ変更を禁止するため resizable=no を指定)
-  const openAsPopup = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      const width = 1024;
-      const height = 768;
-      const left = (window.screen.width - width) / 2;
-      const top = (window.screen.height - height) / 2;
-      window.open(
-        window.location.href, 
-        'KotobattlerPopup', 
-        `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=no`
-      );
-      showToast('別ウィンドウで起動しました 📐');
-    }
-  }, [showToast]);
 
   // カードのフリップ切り替え
   const handleToggleFlip = useCallback((cardId: string) => {
@@ -159,13 +95,6 @@ export default function Home() {
     setFlippedStates({});
   }, [state.activeCardIds, state.currentDeckId]);
 
-  // 物理ウィンドウ変更時のトーストバインド
-  const handleSetDisplaySizeWithToast = useCallback((size: 'small' | 'medium' | 'large') => {
-    state.setDisplaySize(size);
-    const sizeName = size === 'small' ? 'Small (360x520)' : size === 'medium' ? 'Medium (540x700)' : 'Large (1024x768)';
-    showToast(`サイズを ${sizeName} に変更しました 📐`);
-  }, [state, showToast]);
-
   const isCompact = state.displaySize === 'small' || state.displaySize === 'medium';
   const isSmall = state.displaySize === 'small';
 
@@ -193,9 +122,9 @@ export default function Home() {
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center space-x-2">
-                  <h1 className="font-black text-foreground tracking-wide text-xs sm:text-sm">Kotobattler</h1>
+                  <h1 className="font-black text-foreground tracking-wide text-xs sm:text-sm text-neon-green">Kotobattler</h1>
                   {!isSmall && (
-                    <span className="text-[9px] bg-neon-green/10 text-neon-green font-bold px-1.5 py-0.5 rounded border border-neon-green/20">v0.3</span>
+                    <span className="text-[9px] bg-neon-green/10 text-neon-green font-bold px-1.5 py-0.5 rounded border border-neon-green/20">v0.6</span>
                   )}
                 </div>
                 {!isSmall && (
@@ -205,56 +134,13 @@ export default function Home() {
                     </span>
                     <span>•</span>
                     <span>残り: {state.drawPool.length}枚</span>
-                    {!isPopup && (
-                      <>
-                        <span>•</span>
-                        <span className="text-neon-purple font-semibold">💡 別窓起動で物理サイズ固定が可能</span>
-                      </>
-                    )}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* 中央上部: S / M / L セグメントボタン (別窓起動時のみ表示) */}
-            {isPopup ? (
-              <div className={`flex items-center rounded-xl bg-foreground/5 p-1 border border-foreground/5 shadow-inner transition-all ${
-                isSmall ? 'scale-90' : 'scale-100'
-              }`}>
-                {(['small', 'medium', 'large'] as const).map(size => (
-                  <button
-                    key={size}
-                    onClick={() => handleSetDisplaySizeWithToast(size)}
-                    className={`px-3 py-1 text-[9px] font-black rounded-lg transition-all uppercase ${
-                      state.displaySize === size
-                        ? 'bg-neon-green text-background dark:text-slate-950 shadow font-extrabold'
-                        : 'text-foreground/55 hover:text-foreground hover:bg-foreground/5'
-                    }`}
-                    title={`${size}サイズに切り替えます`}
-                  >
-                    {size.charAt(0)}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              // 全画面タブ時は非表示にしてヘッダーをスッキリ見せる
-              <div className="hidden md:flex items-center space-x-1.5 opacity-0 pointer-events-none" />
-            )}
-
             {/* 右側操作ボタン */}
             <div className="flex items-center space-x-1.5">
-              {/* 別窓で開くボタン (通常タブ時のみ表示) */}
-              {!isPopup && !isSmall && (
-                <button
-                  onClick={openAsPopup}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-neon-purple/10 hover:bg-neon-purple/20 border border-neon-purple/20 text-neon-purple transition-all shadow-sm"
-                  title="物理リサイズが有効な別ウィンドウで開きます"
-                >
-                  <span className="hidden sm:inline">別窓で起動</span>
-                  <span className="inline sm:hidden">別窓</span>
-                </button>
-              )}
-
               {!isSmall && (
                 <button
                   onClick={() => setAppMode('manage')}
@@ -439,7 +325,6 @@ export default function Home() {
             setShortcutEnabled={state.setShortcutEnabled}
             setSelectedAirSuitability={state.setSelectedAirSuitability}
             setTheme={state.setTheme}
-            setDisplaySize={handleSetDisplaySizeWithToast}
             startSession={state.startSession}
             endSession={state.endSession}
             addPerson={state.addPerson}
