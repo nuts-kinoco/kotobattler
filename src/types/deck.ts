@@ -1,6 +1,13 @@
 export type CardState = 'unused' | 'used' | 'skipped' | 'sealed';
 
-export type AirSuitability = '初動' | '静か' | '盛り上がり' | '深夜' | '疲れ気味' | '普通';
+export type OperationMode = 'auto' | 'desktop' | 'touch';
+
+export interface AirMode {
+  id: string;
+  name: string;
+}
+
+export type AirSuitability = string;
 
 export interface Card {
   id: string;

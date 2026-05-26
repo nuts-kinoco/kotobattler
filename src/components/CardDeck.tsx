@@ -15,6 +15,9 @@ interface CardDeckProps {
   onToggleFlip: (cardId: string) => void;
   displaySize?: 'small' | 'medium' | 'large';
   onResetUsedCards?: () => void;
+  opMode?: 'desktop' | 'touch';
+  onUseCard?: (cardId: string) => void;
+  onSkipCard?: (cardId: string) => void;
 }
 
 export const CardDeck: React.FC<CardDeckProps> = ({
@@ -25,11 +28,14 @@ export const CardDeck: React.FC<CardDeckProps> = ({
   flippedStates,
   onToggleFlip,
   displaySize = 'large',
-  onResetUsedCards
+  onResetUsedCards,
+  opMode = 'desktop',
+  onUseCard,
+  onSkipCard
 }) => {
   const isCompact = displaySize === 'small' || displaySize === 'medium';
 
-  // アプリに表示する対象のカードオブジェクトを順番に取得
+  // アプリに表示する対象 of カードオブジェクトを順番に取得
   const displayCards = activeCardIds
     .map(id => cards.find(c => c.id === id))
     .filter((c): c is CardType => !!c);
@@ -83,49 +89,61 @@ export const CardDeck: React.FC<CardDeckProps> = ({
     );
   }
 
-
-  // Small モード (1枚表示)
+  // Small モード (スマホ幅縦画面) - 1枚表示だけでなく、複数枚を極小スケールダウンで並べる
   if (displaySize === 'small') {
-    const card = displayCards[0];
-    if (!card) return null;
-    const isFlipped = !!flippedStates[card.id];
+    const count = displayCards.length;
+    
+    // 表示枚数に応じたスケール値と重なり（ネガティブマージン）の設定
+    const scale = count === 1 ? 0.9 : count === 2 ? 0.62 : 0.45;
+    const spacingClass = count === 2 ? 'space-x-[-45px]' : 'space-x-[-125px]';
 
     return (
-      <div className="flex items-center justify-center w-full scale-85 sm:scale-90 transition-all duration-300">
+      <div 
+        className={`flex flex-row items-center justify-center ${spacingClass} w-full transition-all duration-300 py-4`}
+        style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}
+      >
         <AnimatePresence mode="popLayout">
-          <motion.div
-            key={card.id}
-            layout
-            initial={{ 
-              opacity: 0, 
-              scale: 0.95, 
-              y: 20 
-            }}
-            animate={{ 
-              opacity: 1, 
-              scale: 1,
-              y: 0,
-              transition: {
-                duration: 0.25,
-                ease: "easeOut"
-              }
-            }}
-            exit={{
-              opacity: 0,
-              y: card.state === 'used' ? -800 : 0, // 話したなら上、パスなら右へ
-              x: card.state === 'used' ? 0 : 500,    // パスなら右へフェードアウト
-              scale: 0.85,
-              transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] }
-            }}
-          >
-            <Card
-              card={card}
-              isFlipped={isFlipped}
-              onToggleFlip={() => onToggleFlip(card.id)}
-              isActive={true}
-              onClick={() => {}}
-            />
-          </motion.div>
+          {displayCards.map((card, index) => {
+            const isFlipped = !!flippedStates[card.id];
+            const isActive = index === activeCardIndex;
+            
+            // 重なり順の制御
+            const zIndex = isActive ? 30 : 10 + (index === 0 || index === 2 ? 0 : 5);
+
+            return (
+              <motion.div
+                key={card.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ 
+                  opacity: 1, 
+                  scale: isActive ? 1.05 : 0.95,
+                  y: isActive ? -5 : 5,
+                  transition: { duration: 0.25 }
+                }}
+                exit={{
+                  opacity: 0,
+                  y: card.state === 'used' ? -800 : 0,
+                  x: card.state === 'used' ? 0 : 500,
+                  scale: 0.85,
+                  transition: { duration: 0.35 }
+                }}
+                style={{ zIndex }}
+                className="transition-all duration-300 shrink-0"
+              >
+                <Card
+                  card={card}
+                  isFlipped={isFlipped}
+                  onToggleFlip={() => onToggleFlip(card.id)}
+                  isActive={isActive}
+                  onClick={() => setActiveCardIndex(index)}
+                  opMode={opMode}
+                  onUse={() => onUseCard && onUseCard(card.id)}
+                  onSkip={() => onSkipCard && onSkipCard(card.id)}
+                />
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
     );
@@ -173,6 +191,9 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   onToggleFlip={() => onToggleFlip(card.id)}
                   isActive={isActive}
                   onClick={() => setActiveCardIndex(index)}
+                  opMode={opMode}
+                  onUse={() => onUseCard && onUseCard(card.id)}
+                  onSkip={() => onSkipCard && onSkipCard(card.id)}
                 />
               </motion.div>
             );
@@ -219,9 +240,6 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                 transformClass = 'translate-x-8 -translate-y-1 scale-95 rotate-[0.5deg]';
               }
 
-              // シャッフル用のアングルゆらぎ
-              const shuffleAngle = (index % 2 === 0 ? 1.5 : -1.5) * (1 + (index % 2));
-
               return (
                 <motion.div
                   key={card.id}
@@ -255,6 +273,9 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                     onToggleFlip={() => onToggleFlip(card.id)}
                     isActive={isActive}
                     onClick={() => setActiveCardIndex(index)}
+                    opMode={opMode}
+                    onUse={() => onUseCard && onUseCard(card.id)}
+                    onSkip={() => onSkipCard && onSkipCard(card.id)}
                   />
                 </motion.div>
               );

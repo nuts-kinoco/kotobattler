@@ -5,7 +5,7 @@ import {
   Plus, Search, Tag, Star, Download, Upload, Trash2, 
   Edit3, Folder, BookOpen, AlertCircle, ArrowLeft, Check, Lock
 } from 'lucide-react';
-import { Card, Deck, AirSuitability, CardState } from '../types/deck';
+import { Card, Deck, AirSuitability, CardState, AirMode } from '../types/deck';
 
 interface DeckManagerProps {
   cards: Card[];
@@ -19,6 +19,7 @@ interface DeckManagerProps {
   toggleCardSealed: (id: string) => void;
   importCSV: (csvText: string) => boolean;
   downloadCSV: () => void;
+  airModes: AirMode[];
   showToast?: (msg: string) => void;
 }
 
@@ -34,6 +35,7 @@ export const DeckManager: React.FC<DeckManagerProps> = ({
   toggleCardSealed,
   importCSV,
   downloadCSV,
+  airModes,
   showToast
 }) => {
   // 編集モード
@@ -459,12 +461,11 @@ export const DeckManager: React.FC<DeckManagerProps> = ({
                 onChange={(e) => setFormAir(e.target.value as AirSuitability)}
                 className="w-full text-xs bg-background border border-foreground/10 rounded-lg p-2.5 text-foreground focus:outline-none focus:border-neon-green cursor-pointer"
               >
-                <option value="普通">普通</option>
-                <option value="初動">初動</option>
-                <option value="静か">静か</option>
-                <option value="盛り上がり">盛り上がり</option>
-                <option value="深夜">深夜</option>
-                <option value="疲れ気味">疲れ気味</option>
+                {airModes.map(mode => (
+                  <option key={mode.id} value={mode.name}>
+                    {mode.name}
+                  </option>
+                ))}
               </select>
             </div>
 

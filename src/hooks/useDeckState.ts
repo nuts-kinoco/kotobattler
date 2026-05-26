@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, Deck, Person, Session, AirSuitability, CardState } from '../types/deck';
+import { Card, Deck, Person, Session, AirSuitability, CardState, AirMode, OperationMode } from '../types/deck';
 import { STARTER_CARDS, STARTER_DECKS } from '../data/starterDeck';
-import { storage } from '../services/storage';
+import { storage, DEFAULT_AIR_MODES } from '../services/storage';
 import { backupService } from '../services/backup';
 import { importService } from '../services/import';
 
@@ -32,8 +32,12 @@ export const useDeckState = () => {
   const [displaySize, setDisplaySize] = useState<'small' | 'medium' | 'large'>('large');
   const [cardDisplayCount, setCardDisplayCount] = useState<number>(3);
   const [shortcutEnabled, setShortcutEnabled] = useState<boolean>(true);
-  const [selectedAirSuitability, setSelectedAirSuitability] = useState<AirSuitability | 'All'>('All');
+  const [airModes, setAirModes] = useState<AirMode[]>([]);
+  const [selectedAirSuitabilities, setSelectedAirSuitabilities] = useState<string[]>([]);
   const [keepPreviousMembers, setKeepPreviousMembers] = useState<boolean>(true);
+  const [operationMode, setOperationMode] = useState<OperationMode>('auto');
+  const [activeOpMode, setActiveOpMode] = useState<'desktop' | 'touch'>('desktop');
+  const [hasSeenGestureHint, setHasSeenGestureHint] = useState<boolean>(false);
   
   // データ破損（パースエラー等）を検知してユーザーに通知・復元を促すためのフラグ
   const [isDataCorrupted, setIsDataCorrupted] = useState<boolean>(false);
@@ -48,10 +52,13 @@ export const useDeckState = () => {
       const width = window.innerWidth;
       if (width < 600) {
         setDisplaySize('small');
-        setCardDisplayCount(1);
+        // スマホ時：基本はデフォルト1枚表示にするが、ユーザーがLocalStorage等で手動で2〜3枚に設定している場合はそれを尊重する
+        const storedCount = storage.loadDisplayCount(1);
+        setCardDisplayCount(storedCount);
       } else if (width < 960) {
         setDisplaySize('medium');
-        setCardDisplayCount(2);
+        const storedCount = storage.loadDisplayCount(2);
+        setCardDisplayCount(storedCount);
       } else {
         setDisplaySize('large');
         // Large時はユーザーの設定した枚数（デフォルト3）にする
@@ -65,6 +72,31 @@ export const useDeckState = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // ==========================================
+  // 2.5 タッチデバイス（ポインター・coarse）監視 ＆ 操作モード連動
+  // ==========================================
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(pointer: coarse)');
+    
+    const updateActiveOpMode = () => {
+      if (operationMode === 'auto') {
+        setActiveOpMode(mediaQuery.matches ? 'touch' : 'desktop');
+      } else {
+        setActiveOpMode(operationMode as 'desktop' | 'touch');
+      }
+    };
+
+    // 初期化時と変更時に実行
+    updateActiveOpMode();
+    
+    // イベントリスナーの追加
+    const listener = () => updateActiveOpMode();
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }, [operationMode]);
 
   // ==========================================
   // 3. マウント時の初期化ロード (storageサービス経由)
@@ -81,6 +113,10 @@ export const useDeckState = () => {
       const loadedShortcut = storage.loadShortcutEnabled(true);
       const loadedTheme = storage.loadTheme('dark');
       const loadedKeepPrevious = storage.loadKeepPreviousMembers(true);
+      const loadedAirModes = storage.loadAirModes(DEFAULT_AIR_MODES);
+      const loadedSelectedAirs = storage.loadSelectedAirSuitabilities([]);
+      const loadedOpMode = storage.loadOperationMode('auto');
+      const loadedGestureHint = storage.loadHasSeenGestureHint(false);
 
       // 2. 状態へのセット
       setCards(loadedCards);
@@ -91,6 +127,10 @@ export const useDeckState = () => {
       setShortcutEnabled(loadedShortcut);
       setTheme(loadedTheme);
       setKeepPreviousMembers(loadedKeepPrevious);
+      setAirModes(loadedAirModes);
+      setSelectedAirSuitabilities(loadedSelectedAirs);
+      setOperationMode(loadedOpMode);
+      setHasSeenGestureHint(loadedGestureHint);
 
       // 初回テーマのCSSクラス適用
       applyTheme(loadedTheme);
@@ -168,6 +208,38 @@ export const useDeckState = () => {
     storage.saveKeepPreviousMembers(keep);
   };
 
+  const handleSaveAirModes = (newModes: AirMode[]) => {
+    setAirModes(newModes);
+    storage.saveAirModes(newModes);
+  };
+
+  const handleSetSelectedAirSuitabilities = (suitabilities: string[]) => {
+    setSelectedAirSuitabilities(suitabilities);
+    storage.saveSelectedAirSuitabilities(suitabilities);
+    setActiveCardIndex(0);
+  };
+
+  const toggleAirSuitability = useCallback((suitability: string) => {
+    setSelectedAirSuitabilities(prev => {
+      const next = prev.includes(suitability)
+        ? prev.filter(s => s !== suitability)
+        : [...prev, suitability];
+      storage.saveSelectedAirSuitabilities(next);
+      return next;
+    });
+    setActiveCardIndex(0);
+  }, []);
+
+  const handleSetOperationMode = (mode: OperationMode) => {
+    setOperationMode(mode);
+    storage.saveOperationMode(mode);
+  };
+
+  const handleSetHasSeenGestureHint = (seen: boolean) => {
+    setHasSeenGestureHint(seen);
+    storage.saveHasSeenGestureHint(seen);
+  };
+
   // --- アプリの完全な初期化・リセットアクション (フォールバック安全策) ---
   const resetAllData = () => {
     storage.clearAll();
@@ -184,6 +256,10 @@ export const useDeckState = () => {
     applyTheme('dark');
     setIsDataCorrupted(false);
     setKeepPreviousMembers(true);
+    setAirModes(DEFAULT_AIR_MODES);
+    setSelectedAirSuitabilities([]);
+    setOperationMode('auto');
+    setHasSeenGestureHint(false);
     
     setTimeout(() => {
       drawCards(3);
@@ -205,8 +281,11 @@ export const useDeckState = () => {
     return deckCards.filter(card => {
       if (card.state === 'sealed' || card.state === 'used') return false;
 
-      if (selectedAirSuitability !== 'All' && card.airSuitability !== selectedAirSuitability) {
-        return false;
+      // 複数選択された空気感フィルター（OR条件、空配列の場合はすべて出現＝従来のAll相当）
+      if (selectedAirSuitabilities.length > 0) {
+        if (!card.airSuitability || !selectedAirSuitabilities.includes(card.airSuitability)) {
+          return false;
+        }
       }
 
       if (session.isActive && session.usedCardIds.includes(card.id)) {
@@ -225,7 +304,7 @@ export const useDeckState = () => {
 
       return true;
     });
-  }, [cards, currentDeck, selectedAirSuitability, session, persons]);
+  }, [cards, currentDeck, selectedAirSuitabilities, session, persons]);
 
   // ==========================================
   // 6. ドローロジック
@@ -252,7 +331,7 @@ export const useDeckState = () => {
     if (cards.length > 0 && decks.length > 0) {
       drawCards(cardDisplayCount);
     }
-  }, [currentDeckId, selectedAirSuitability, cardDisplayCount, cards.length, decks.length]);
+  }, [currentDeckId, selectedAirSuitabilities, cardDisplayCount, cards.length, decks.length]);
 
   // --- お題（使用状態）のクリア・リセットアクション ---
   const resetUsedCards = useCallback(() => {
@@ -620,6 +699,10 @@ export const useDeckState = () => {
       setDecks(storage.loadDecks(STARTER_DECKS));
       setPersons(storage.loadPersons([]));
       setSession(storage.loadSession({ isActive: false, activePersonIds: [], usedCardIds: [] }));
+      setAirModes(storage.loadAirModes(DEFAULT_AIR_MODES));
+      setSelectedAirSuitabilities(storage.loadSelectedAirSuitabilities([]));
+      setOperationMode(storage.loadOperationMode('auto'));
+      setHasSeenGestureHint(storage.loadHasSeenGestureHint(false));
       
       const loadedDeckId = storage.loadCurrentDeckId('deck-all');
       const loadedTheme = storage.loadTheme('dark');
@@ -633,10 +716,10 @@ export const useDeckState = () => {
       // 自動リサイズで表示枚数がリセットされる
       const width = window.innerWidth;
       if (width < 600) {
-        setCardDisplayCount(1);
+        setCardDisplayCount(storage.loadDisplayCount(1));
         setDisplaySize('small');
       } else if (width < 960) {
-        setCardDisplayCount(2);
+        setCardDisplayCount(storage.loadDisplayCount(2));
         setDisplaySize('medium');
       } else {
         setCardDisplayCount(storage.loadDisplayCount(3));
@@ -662,8 +745,12 @@ export const useDeckState = () => {
     activeCardIndex,
     cardDisplayCount,
     shortcutEnabled,
-    selectedAirSuitability,
+    airModes,
+    selectedAirSuitabilities,
     keepPreviousMembers,
+    operationMode,
+    activeOpMode,
+    hasSeenGestureHint,
     drawPool,
     theme,
     displaySize,
@@ -674,7 +761,11 @@ export const useDeckState = () => {
     setCardDisplayCount: handleSetCardDisplayCount,
     setShortcutEnabled: handleSetShortcutEnabled,
     setCurrentDeckId: handleSetCurrentDeckId,
-    setSelectedAirSuitability,
+    setAirModes: handleSaveAirModes,
+    setSelectedAirSuitabilities: handleSetSelectedAirSuitabilities,
+    toggleAirSuitability,
+    setOperationMode: handleSetOperationMode,
+    setHasSeenGestureHint: handleSetHasSeenGestureHint,
     setTheme: handleSetTheme,
     setKeepPreviousMembers: handleSetKeepPreviousMembers,
     setIsDataCorrupted,

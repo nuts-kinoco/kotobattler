@@ -14,22 +14,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
   const state = useDeckState();
-  
-  // アプリモード: 'main' (VCカード画面), 'manage' (カードロッカー管理), 'members' (メンバー整理ロッカー)
-  const [appMode, setAppMode] = useState<'main' | 'manage' | 'members'>('main');
-
-  // サイドパネルの開閉
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
-
-  // 各カードのめくり状態 (cardId => isFlipped)
-  const [flippedStates, setFlippedStates] = useState<Record<string, boolean>>({});
 
   // トースト通知メッセージ
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // 空気メモ編集中の Person ID と入力テキスト
-  const [activeMemoPersonId, setActiveMemoPersonId] = useState<string | null>(null);
-  const [quickMemoText, setQuickMemoText] = useState<string>('');
+  // showToast の定義
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+  }, []);
 
   // トースト表示用のタイマー管理
   useEffect(() => {
@@ -40,13 +32,57 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
+  
+  // ダブルタップでのシャッフル判定ロジック
+  const lastTapRef = React.useRef(0);
+  const handleBackgroundDoubleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'BUTTON' || 
+      target.tagName === 'INPUT' || 
+      target.tagName === 'SELECT' ||
+      target.tagName === 'A' ||
+      target.closest('.glass-card') || 
+      target.closest('header') || 
+      target.closest('footer') ||
+      target.closest('.glass-panel')
+    ) {
+      return;
+    }
 
-  // showToast の定義
-  const showToast = useCallback((msg: string) => {
-    setToastMessage(msg);
-  }, []);
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+    if (now - lastTapRef.current < DOUBLE_PRESS_DELAY) {
+      if (state.activeCardIds.length > 0) {
+        state.shuffleAll();
+        showToast('カードを引き直しました 🦑🔁');
+      }
+    }
+    lastTapRef.current = now;
+  }, [state, showToast]);
 
-  // クイックメモ保存用コールバック
+  // 初回ジェスチャーヒントを自動消去
+  useEffect(() => {
+    if (state.activeOpMode === 'touch' && !state.hasSeenGestureHint) {
+      const timer = setTimeout(() => {
+        state.setHasSeenGestureHint(true);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [state.activeOpMode, state.hasSeenGestureHint, state.setHasSeenGestureHint]);
+
+  // アプリモード: 'main' (VCカード画面), 'manage' (カード管理画面), 'members' (メンバー整理画面)
+  const [appMode, setAppMode] = useState<'main' | 'manage' | 'members'>('main');
+
+  // サイドパネルの開閉
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+
+  // 各カードのめくり状態 (cardId => isFlipped)
+  const [flippedStates, setFlippedStates] = useState<Record<string, boolean>>({});
+
+  const [activeMemoPersonId, setActiveMemoPersonId] = useState<string | null>(null);
+  const [quickMemoText, setQuickMemoText] = useState<string>('');
+
   const handleSaveQuickMemo = useCallback((personId: string, person: any) => {
     state.updatePerson(personId, person.displayName, person.aliases || [], quickMemoText.trim());
     setActiveMemoPersonId(null);
@@ -111,7 +147,11 @@ export default function Home() {
   const isSmall = state.displaySize === 'small';
 
   return (
-    <div className="flex-1 w-full flex flex-col min-h-screen relative overflow-hidden bg-background text-foreground transition-colors duration-300">
+    <div 
+      onMouseDown={handleBackgroundDoubleTap}
+      onTouchEnd={handleBackgroundDoubleTap}
+      className="flex-1 w-full flex flex-col min-h-screen relative overflow-hidden bg-background text-foreground transition-colors duration-300"
+    >
       {/* 背景装飾ネオンの光 (パステル調の超低不透明度) */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-neon-purple/2 blur-[130px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-neon-green/1 blur-[130px] pointer-events-none" />
@@ -188,6 +228,40 @@ export default function Home() {
               </button>
             </div>
           </header>
+
+          {/* === 露出UI: 空気感クイックトグルバー === */}
+          <div className="mt-3 px-4 py-2.5 bg-foreground/5 border border-foreground/5 rounded-2xl flex flex-wrap items-center gap-2 shrink-0 select-none animate-fade-in">
+            <span className="text-[10px] text-foreground/35 font-bold uppercase tracking-widest font-mono mr-1.5 flex items-center gap-1 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-neon-purple shrink-0" />
+              Mood:
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {state.airModes.map(mode => {
+                const isActive = state.selectedAirSuitabilities.includes(mode.name);
+                return (
+                  <button
+                    key={mode.id}
+                    onClick={() => state.toggleAirSuitability(mode.name)}
+                    className={`px-3 py-1 text-xs font-bold rounded-xl transition-all border shrink-0 cursor-pointer ${
+                      isActive
+                        ? 'bg-neon-purple/10 border-neon-purple/35 text-neon-purple font-extrabold shadow-sm shadow-neon-purple/5'
+                        : 'glass-panel-light hover:bg-foreground/5 text-foreground/60 hover:text-foreground border-foreground/5'
+                    }`}
+                  >
+                    <span>{mode.name}</span>
+                  </button>
+                );
+              })}
+              {state.selectedAirSuitabilities.length > 0 && (
+                <button
+                  onClick={() => state.setSelectedAirSuitabilities([])}
+                  className="px-2 py-1 text-[10px] font-bold text-foreground/45 hover:text-foreground hover:underline transition-all cursor-pointer"
+                >
+                  クリア
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* === アクティブなVC参加メンバー ＆ 空気メモポップオーバー === */}
           {state.session.isActive && state.session.activePersonIds.length > 0 && (
@@ -319,6 +393,9 @@ export default function Home() {
               onToggleFlip={handleToggleFlip}
               displaySize={state.displaySize}
               onResetUsedCards={state.resetUsedCards}
+              opMode={state.activeOpMode}
+              onUseCard={handleUseCardWrapper}
+              onSkipCard={handleSkipCardWrapper}
             />
           </main>
 
@@ -398,9 +475,9 @@ export default function Home() {
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  {state.selectedAirSuitability !== 'All' && (
+                  {state.selectedAirSuitabilities.length > 0 && (
                     <span className="bg-neon-purple/10 border border-neon-purple/20 text-neon-purple text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                      空気感: {state.selectedAirSuitability}
+                      空気感: {state.selectedAirSuitabilities.join(', ')}
                     </span>
                   )}
                   <span>表示: {state.cardDisplayCount}枚</span>
@@ -423,13 +500,16 @@ export default function Home() {
             session={state.session}
             cardDisplayCount={state.cardDisplayCount}
             shortcutEnabled={state.shortcutEnabled}
-            selectedAirSuitability={state.selectedAirSuitability}
+            airModes={state.airModes}
+            selectedAirSuitabilities={state.selectedAirSuitabilities}
             theme={state.theme}
             displaySize={state.displaySize}
             keepPreviousMembers={state.keepPreviousMembers}
+            operationMode={state.operationMode}
             setCardDisplayCount={state.setCardDisplayCount}
             setShortcutEnabled={state.setShortcutEnabled}
-            setSelectedAirSuitability={state.setSelectedAirSuitability}
+            setSelectedAirSuitabilities={state.setSelectedAirSuitabilities}
+            setOperationMode={state.setOperationMode}
             setTheme={state.setTheme}
             setKeepPreviousMembers={state.setKeepPreviousMembers}
             startSession={state.startSession}
@@ -457,6 +537,7 @@ export default function Home() {
             toggleCardSealed={state.toggleCardSealed}
             importCSV={state.importCSV}
             downloadCSV={state.downloadCSV}
+            airModes={state.airModes}
             showToast={showToast}
           />
         </div>
@@ -476,6 +557,40 @@ export default function Home() {
           />
         </div>
       )}
+
+      {/* === 初回ジェスチャー操作ガイド (Touchモードかつ未確認時) === */}
+      <AnimatePresence>
+        {!state.hasSeenGestureHint && state.activeOpMode === 'touch' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 pointer-events-none select-none"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="glass-panel p-6 rounded-3xl border border-neon-purple/35 text-center space-y-4 max-w-xs shadow-2xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-neon-purple/20 border border-neon-purple/30 flex items-center justify-center mx-auto text-xl animate-bounce">
+                <span>👆</span>
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-extrabold text-sm text-neon-purple tracking-wide">Touch Gesture Active</h4>
+                <p className="text-[11px] text-foreground/80 leading-relaxed font-semibold">
+                  カードを直接指でドラッグして仕分けられます
+                </p>
+                <div className="text-[10px] text-foreground/50 bg-slate-950/10 p-2.5 rounded-xl border border-white/5 space-y-1 text-left font-mono">
+                  <p>↑ フリック : 話した！</p>
+                  <p>→ フリック : パス</p>
+                  <p>背景ダブルタップ : 引き直し</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* === トースト通知 === */}
       <AnimatePresence>

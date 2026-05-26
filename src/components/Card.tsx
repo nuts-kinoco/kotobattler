@@ -11,12 +11,15 @@ interface CardProps {
   onToggleFlip: () => void;
   isActive: boolean;
   onClick: () => void;
+  opMode?: 'desktop' | 'touch';
+  onUse?: () => void;
+  onSkip?: () => void;
 }
 
 // お題の空気感（AirSuitability）に基づいたダイナミックなカラースキーム定義
 const getAirSuitabilityStyles = (suitability?: string) => {
   switch (suitability) {
-    case '初動':
+    case 'はじめまして':
       return {
         gradientColor: 'rgba(6, 182, 212, 0.05)', // シアン
         hoverBorder: 'group-hover:border-cyan-400/40 focus-within:border-cyan-400/40',
@@ -40,7 +43,7 @@ const getAirSuitabilityStyles = (suitability?: string) => {
         badgeBg: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-300',
         glowColor: 'rgba(245, 158, 11, 0.15)'
       };
-    case '深夜':
+    case '深夜帯':
       return {
         gradientColor: 'rgba(139, 92, 246, 0.06)', // バイオレット
         hoverBorder: 'group-hover:border-violet-400/40 focus-within:border-violet-400/40',
@@ -72,9 +75,16 @@ export const Card: React.FC<CardProps> = ({
   isFlipped,
   onToggleFlip,
   isActive,
-  onClick
+  onClick,
+  opMode = 'desktop',
+  onUse,
+  onSkip
 }) => {
   const styles = getAirSuitabilityStyles(card.airSuitability);
+
+  // ドラッグ状態
+  const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = React.useState(false);
 
   const renderStars = (count: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
@@ -87,13 +97,72 @@ export const Card: React.FC<CardProps> = ({
     ));
   };
 
+  const isTouch = opMode === 'touch';
+
+  // インジケーターの透明度計算
+  const useOpacity = isDragging && dragOffset.y < 0 ? Math.min(1, Math.max(0, -dragOffset.y / 100)) : 0;
+  const skipOpacity = isDragging && dragOffset.x > 0 ? Math.min(1, Math.max(0, dragOffset.x / 100)) : 0;
+
   return (
-    <div
+    <motion.div
       onClick={isActive ? undefined : onClick}
+      // Touchモードかつアクティブ時のみドラッグを有効化
+      drag={isActive && isTouch}
+      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+      dragElastic={0.65}
+      onDragStart={() => setIsDragging(true)}
+      onDrag={(_, info) => {
+        setDragOffset({ x: info.offset.x, y: info.offset.y });
+      }}
+      onDragEnd={(_, info) => {
+        setIsDragging(false);
+        setDragOffset({ x: 0, y: 0 });
+
+        // ドラッグ距離のしきい値判定 (真上に大きく弾いた＝Used、右に大きく弾いた＝Skip)
+        if (info.offset.y < -120 && onUse) {
+          onUse();
+        } else if (info.offset.x > 120 && onSkip) {
+          onSkip();
+        }
+      }}
       className={`relative w-80 h-112 cursor-pointer perspective-1000 group ${
         isActive ? 'scale-100 z-10' : 'scale-85 opacity-35 hover:opacity-50 z-0'
       } transition-all duration-300`}
+      style={{
+        // ドラッグ時のリアルタイムな傾き
+        rotate: isTouch && isActive ? dragOffset.x / 18 : 0,
+        // フリック時のちょっとした浮遊感
+        y: isTouch && isActive && isDragging ? dragOffset.y * 0.8 : 0,
+        x: isTouch && isActive && isDragging ? dragOffset.x * 0.8 : 0,
+      }}
     >
+      {/* === 極小スワイプガイドインジケーター === */}
+      {isActive && isTouch && (
+        <>
+          {/* 上部: 話した！インジケーター */}
+          <div
+            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-neon-green/20 border border-neon-green/45 text-neon-green font-black text-[11px] px-3.5 py-1.5 rounded-full shadow-lg shadow-neon-green/10 flex items-center gap-1 z-40 pointer-events-none transition-all duration-100"
+            style={{
+              opacity: useOpacity,
+              transform: `translateX(-50%) translateY(${Math.min(0, dragOffset.y * 0.15)}px) scale(${0.8 + useOpacity * 0.2})`,
+            }}
+          >
+            <span>↑ 話した！</span>
+          </div>
+
+          {/* 右側: パスインジケーター */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -right-10 bg-neon-purple/20 border border-neon-purple/45 text-neon-purple font-black text-[11px] px-3.5 py-1.5 rounded-full shadow-lg shadow-neon-purple/10 flex items-center gap-1 z-40 pointer-events-none transition-all duration-100"
+            style={{
+              opacity: skipOpacity,
+              transform: `translateY(-50%) translateX(${Math.max(0, dragOffset.x * 0.15)}px) scale(${0.8 + skipOpacity * 0.2})`,
+            }}
+          >
+            <span>パス →</span>
+          </div>
+        </>
+      )}
+
       <motion.div
         className="w-full h-full relative preserve-3d"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
@@ -101,6 +170,10 @@ export const Card: React.FC<CardProps> = ({
       >
         {/* === カード裏面 (カード用画像背景) === */}
         <div
+          onClick={() => {
+            // ドラッグ中でなければめくる (Desktopモードのフォールバック)
+            if (isActive && !isDragging) onToggleFlip();
+          }}
           className="absolute inset-0 w-full h-full rounded-3xl backface-hidden border border-white/5 dark:border-white/5 shadow-2xl overflow-hidden animate-ink-wave"
           style={{ 
             transform: 'rotateY(0deg)',
@@ -116,7 +189,10 @@ export const Card: React.FC<CardProps> = ({
 
         {/* === カード表面 (ガラスモーフィズム ＆ 空気感連動グラデーション) === */}
         <div
-          onClick={isActive ? onToggleFlip : undefined}
+          onClick={() => {
+            // ドラッグ中でなければめくる (Desktopモードのフォールバック)
+            if (isActive && !isDragging) onToggleFlip();
+          }}
           className={`absolute inset-0 w-full h-full rounded-3xl backface-hidden glass-card border border-white/10 dark:border-white/5 flex flex-col justify-between p-7 overflow-hidden transition-all duration-300 ${
             isActive ? styles.hoverBorder : 'border-white/5'
           }`}
@@ -172,9 +248,9 @@ export const Card: React.FC<CardProps> = ({
                 <p className="text-[10px] text-foreground/50 bg-foreground/5 p-2 rounded-lg leading-relaxed flex items-start gap-1">
                   <AlertCircle className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${
                     card.airSuitability === '盛り上がり' ? 'text-amber-400' :
-                    card.airSuitability === '初動' ? 'text-cyan-400' :
+                    card.airSuitability === 'はじめまして' ? 'text-cyan-400' :
                     card.airSuitability === '静か' ? 'text-emerald-400' :
-                    card.airSuitability === '深夜' ? 'text-violet-400' :
+                    card.airSuitability === '深夜帯' ? 'text-violet-400' :
                     card.airSuitability === '疲れ気味' ? 'text-rose-400' : 'text-slate-400'
                   }`} />
                   <span>{card.memo}</span>
@@ -209,6 +285,6 @@ export const Card: React.FC<CardProps> = ({
           backface-visibility: hidden;
         }
       `}</style>
-    </div>
+    </motion.div>
   );
 };

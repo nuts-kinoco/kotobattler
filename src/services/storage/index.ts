@@ -1,4 +1,4 @@
-import { Card, Deck, Person, Session } from '../../types/deck';
+import { Card, Deck, Person, Session, AirMode, OperationMode } from '../../types/deck';
 
 // 保存データのバージョン定義
 const CURRENT_VERSION = 1;
@@ -9,6 +9,19 @@ export interface StorageDataWrapper<T> {
 }
 
 let storageLoadErrorOccurred = false;
+
+export const DEFAULT_AIR_MODES: AirMode[] = [
+  { id: "air-intro", name: "はじめまして" },
+  { id: "air-win", name: "連勝中" },
+  { id: "air-lose", name: "連敗中" },
+  { id: "air-clean", name: "不穏" },
+  { id: "air-chat", name: "お見合い" },
+  { id: "air-midnight", name: "深夜帯" },
+  { id: "air-silent", name: "静か" },
+  { id: "air-tired", name: "疲れ気味" },
+  { id: "air-hype", name: "盛り上がり" },
+  { id: "air-normal", name: "普通" }
+];
 
 // 例外安全なJSONパース関数
 export function safeParse<T>(jsonStr: string | null, fallback: T): T {
@@ -62,7 +75,11 @@ const KEYS = {
   SHORTCUT_ENABLED: 'squid_shortcut_enabled',
   THEME: 'squid_theme',
   DISPLAY_SIZE: 'squid_display_size',
-  KEEP_PREVIOUS_MEMBERS: 'squid_keep_previous_members'
+  KEEP_PREVIOUS_MEMBERS: 'squid_keep_previous_members',
+  AIR_MODES: 'squid_air_modes',
+  SELECTED_AIR_SUITABILITIES: 'squid_selected_air_suitabilities',
+  OPERATION_MODE: 'squid_operation_mode',
+  HAS_SEEN_GESTURE_HINT: 'squid_has_seen_gesture_hint'
 } as const;
 
 export const storage = {
@@ -175,6 +192,52 @@ export const storage = {
   saveKeepPreviousMembers: (keep: boolean): void => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(KEYS.KEEP_PREVIOUS_MEMBERS, String(keep));
+    }
+  },
+
+  // --- 空気感モードマスタ ---
+  loadAirModes: (fallback: AirMode[]): AirMode[] => {
+    if (typeof window === 'undefined') return fallback;
+    const data = localStorage.getItem(KEYS.AIR_MODES);
+    return safeParse<AirMode[]>(data, fallback);
+  },
+  saveAirModes: (modes: AirMode[]): void => {
+    setItemWithVersion(KEYS.AIR_MODES, modes);
+  },
+
+  // --- 選択された空気感フィルター ---
+  loadSelectedAirSuitabilities: (fallback: string[]): string[] => {
+    if (typeof window === 'undefined') return fallback;
+    const data = localStorage.getItem(KEYS.SELECTED_AIR_SUITABILITIES);
+    return safeParse<string[]>(data, fallback);
+  },
+  saveSelectedAirSuitabilities: (suitabilities: string[]): void => {
+    setItemWithVersion(KEYS.SELECTED_AIR_SUITABILITIES, suitabilities);
+  },
+
+  // --- 操作モード ---
+  loadOperationMode: (fallback: OperationMode): OperationMode => {
+    if (typeof window === 'undefined') return fallback;
+    const mode = localStorage.getItem(KEYS.OPERATION_MODE) as OperationMode;
+    return (mode === 'auto' || mode === 'desktop' || mode === 'touch') ? mode : fallback;
+  },
+  saveOperationMode: (mode: OperationMode): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(KEYS.OPERATION_MODE, mode);
+    }
+  },
+
+  // --- ジェスチャーヒントを見たことがあるか ---
+  loadHasSeenGestureHint: (fallback: boolean): boolean => {
+    if (typeof window === 'undefined') return fallback;
+    const data = localStorage.getItem(KEYS.HAS_SEEN_GESTURE_HINT);
+    if (data === 'true') return true;
+    if (data === 'false') return false;
+    return fallback;
+  },
+  saveHasSeenGestureHint: (seen: boolean): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(KEYS.HAS_SEEN_GESTURE_HINT, String(seen));
     }
   },
 

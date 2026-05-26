@@ -1,5 +1,5 @@
-import { Card, Deck, Person, Session } from '../../types/deck';
-import { storage } from '../storage';
+import { Card, Deck, Person, Session, AirMode, OperationMode } from '../../types/deck';
+import { storage, DEFAULT_AIR_MODES } from '../storage';
 
 // 統合バックアップデータの型定義
 export interface KotobattlerBackupData {
@@ -9,6 +9,7 @@ export interface KotobattlerBackupData {
   decks: Deck[];
   persons: Person[];
   session: Session;
+  airModes?: AirMode[];
   settings: {
     theme: 'dark' | 'light';
     displaySize: 'small' | 'medium' | 'large';
@@ -16,6 +17,7 @@ export interface KotobattlerBackupData {
     shortcutEnabled: boolean;
     currentDeckId: string;
     keepPreviousMembers?: boolean;
+    operationMode?: OperationMode;
   };
 }
 
@@ -31,13 +33,15 @@ export const backupService = {
       decks: storage.loadDecks([]),
       persons: storage.loadPersons([]),
       session: storage.loadSession({ isActive: false, activePersonIds: [], usedCardIds: [] }),
+      airModes: storage.loadAirModes(DEFAULT_AIR_MODES),
       settings: {
         theme: storage.loadTheme('dark'),
         displaySize: storage.loadDisplaySize('large'),
         displayCount: storage.loadDisplayCount(3),
         shortcutEnabled: storage.loadShortcutEnabled(true),
         currentDeckId: storage.loadCurrentDeckId('deck-all'),
-        keepPreviousMembers: storage.loadKeepPreviousMembers(true)
+        keepPreviousMembers: storage.loadKeepPreviousMembers(true),
+        operationMode: storage.loadOperationMode('auto')
       }
     };
 

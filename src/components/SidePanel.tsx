@@ -6,7 +6,7 @@ import {
   HelpCircle, Sparkles, Filter, Plus, Trash2, Check,
   Moon, Sun, ChevronDown, ChevronUp, RotateCcw, Download, Upload
 } from 'lucide-react';
-import { Card as CardType, Person, Session, AirSuitability } from '../types/deck';
+import { Card as CardType, Person, Session, AirSuitability, AirMode } from '../types/deck';
 
 interface SidePanelProps {
   isOpen: boolean;
@@ -16,13 +16,16 @@ interface SidePanelProps {
   session: Session;
   cardDisplayCount: number;
   shortcutEnabled: boolean;
-  selectedAirSuitability: AirSuitability | 'All';
+  airModes: AirMode[];
+  selectedAirSuitabilities: string[];
   theme: 'dark' | 'light';
   displaySize: 'small' | 'medium' | 'large';
   keepPreviousMembers: boolean;
+  operationMode: 'auto' | 'desktop' | 'touch';
   setCardDisplayCount: (count: number) => void;
   setShortcutEnabled: (enabled: boolean) => void;
-  setSelectedAirSuitability: (suitability: AirSuitability | 'All') => void;
+  setSelectedAirSuitabilities: (suitabilities: string[]) => void;
+  setOperationMode: (mode: 'auto' | 'desktop' | 'touch') => void;
   setTheme: (theme: 'dark' | 'light') => void;
   setKeepPreviousMembers: (keep: boolean) => void;
   startSession: (personIds: string[]) => void;
@@ -43,13 +46,16 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   session,
   cardDisplayCount,
   shortcutEnabled,
-  selectedAirSuitability,
+  airModes,
+  selectedAirSuitabilities,
   theme,
   displaySize,
   keepPreviousMembers,
+  operationMode,
   setCardDisplayCount,
   setShortcutEnabled,
-  setSelectedAirSuitability,
+  setSelectedAirSuitabilities,
+  setOperationMode,
   setTheme,
   setKeepPreviousMembers,
   startSession,
@@ -184,7 +190,29 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     setEditingPersonId(null);
   };
 
-  const airModes: (AirSuitability | 'All')[] = ['All', '初動', '普通', '静か', '盛り上がり', '深夜', '疲れ気味'];
+  // 空気感の選択肢（マスタデータ）
+  const airSuitabilityOptions: (AirSuitability | 'All')[] = ['All', '初動', '普通', '静か', '盛り上がり', '深夜', '疲れ気味'];
+
+  // 複数選択用のハンドラ
+  const handleAirSuitabilityToggle = (mode: AirSuitability | 'All') => {
+    if (mode === 'All') {
+      setSelectedAirSuitabilities(['All']);
+    } else {
+      let next = [...selectedAirSuitabilities];
+      next = next.filter(x => x !== 'All');
+      
+      if (next.includes(mode)) {
+        next = next.filter(x => x !== mode);
+      } else {
+        next.push(mode);
+      }
+      
+      if (next.length === 0) {
+        next = ['All'];
+      }
+      setSelectedAirSuitabilities(next);
+    }
+  };
 
   return (
     <div className="fixed inset-y-0 right-0 z-50 w-96 glass-panel border-l border-foreground/5 shadow-2xl flex flex-col transition-all duration-300">
@@ -353,26 +381,31 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               )}
             </div>
 
-            {/* 空気感フィルター (手軽に変更可能) */}
+            {/* 空気感フィルター (手軽に変更可能 - 複数選択可) */}
             <div className="space-y-3">
               <div className="flex items-center gap-1 text-xs text-foreground/50 font-bold uppercase tracking-widest font-mono">
                 <Filter className="w-3.5 h-3.5" />
-                <span>空気感フィルター</span>
+                <span>空気感フィルター (複数選択可)</span>
               </div>
               <div className="grid grid-cols-3 gap-1.5">
-                {airModes.map(mode => (
-                  <button
-                    key={mode}
-                    onClick={() => setSelectedAirSuitability(mode)}
-                    className={`py-2 px-1 text-xs font-semibold rounded-lg border transition-all text-center ${
-                      selectedAirSuitability === mode
-                        ? 'bg-neon-green/10 border-neon-green/30 text-neon-green'
-                        : 'bg-foreground/5 border-foreground/5 text-foreground/60 hover:bg-foreground/10'
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
+                {airSuitabilityOptions.map(mode => {
+                  const isActive = mode === 'All' 
+                    ? (selectedAirSuitabilities.includes('All') || selectedAirSuitabilities.length === 0)
+                    : selectedAirSuitabilities.includes(mode);
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => handleAirSuitabilityToggle(mode)}
+                      className={`py-2 px-1 text-xs font-semibold rounded-lg border transition-all text-center cursor-pointer ${
+                        isActive
+                          ? 'bg-neon-green/10 border-neon-green/30 text-neon-green font-bold shadow-sm'
+                          : 'bg-foreground/5 border-foreground/5 text-foreground/60 hover:bg-foreground/10'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -598,7 +631,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         {activeTab === 'settings' && (
           <div className="space-y-6">
             
-            {/* ダーク/ライトテーマ切り替え */}
+            {/* テーマ切り替え */}
             <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-3">
               <label className="text-xs font-bold text-foreground/80 flex items-center gap-1.5">
                 テーマ切り替え
@@ -633,24 +666,24 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 ⚠️ ローカルデータに関する重要なお願い
               </label>
               <p className="text-[10px] text-foreground/80 dark:text-foreground/75 leading-relaxed font-medium">
-                本アプリはプライバシー保護のため、すべてのデータがブラウザのローカル（LocalStorage）のみに安全に保存されます。
+                本アプリはプライバシー保護のため、すべてのデータがブラウザのローカル（LocalStorage）のみに安全に保存されますわ。
               </p>
               <p className="text-[10px] text-amber-900 dark:text-amber-200 leading-relaxed font-bold">
-                そのため、ブラウザの「キャッシュや履歴・Cookieの消去」をおこなうと、お題カードやメンバーのロッカーメモがすべて完全に消去されてしまいます。
+                そのため、ブラウザの「キャッシュ履歴・Cookieの消去」をおこなわれますと、お題カードやメンバーのメモがすべて完全に消去されてしまいますの。
               </p>
               <p className="text-[10px] text-foreground/70 dark:text-foreground/50 leading-relaxed font-medium">
-                大切なデータを守るため、定期的に「完全保存 (JSON)」からバックアップファイルをPCにダウンロード保存することを強く推奨します。
+                大切なおデータを守るため、定期的に「完全保存 (JSON)」からバックアップファイルをPCにダウンロード保存することを強く推奨いたしますわ。
               </p>
             </div>
 
-            {/* 完全フルバックアップ（JSON）エリア */}
+            {/* 完全フルバックアップ (JSON) エリア */}
             <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-foreground/90 flex items-center gap-1.5 select-none">
                   📁 完全フルバックアップ (JSON)
                 </label>
                 <p className="text-[10px] text-foreground/45 leading-relaxed font-semibold">
-                  お題カード、ロッカーメモ、会話履歴、現在のセッション、およびUIテーマや各種キー設定を含む、コトバトラーでの全ての体験情報を一撃で完全パックして保存・復元します。
+                  お題カード、メンバーメモ、会話履歴、現在のセッション、およびUIテーマや操作設定を含む、コトバトラーでの全ての体験情報を一括して完全パック保存・復元できますわ。
                 </p>
               </div>
 
@@ -660,10 +693,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   type="button"
                   onClick={exportJSON}
                   className="py-2.5 px-3 bg-neon-green/10 hover:bg-neon-green/20 border border-neon-green/20 text-neon-green rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                  title="すべての体験情報を1つのJSONファイルとしてPCに保存します"
+                  title="すべての体験情報を一つのJSONファイルとしてPCに保存しますわ"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  完全保存 (JSON)
+                  完全保存(JSON)
                 </button>
 
                 {/* 完全復元 */}
@@ -671,10 +704,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   type="button"
                   onClick={handleJsonUploadClick}
                   className="py-2.5 px-3 bg-neon-purple/10 hover:bg-neon-purple/20 border border-neon-purple/20 text-neon-purple rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                  title="バックアップJSONファイルからすべての状態を完全に復元します"
+                  title="バックアップJSONファイルからすべての状態を完全に復元いたしますわ"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  完全復元 (JSON)
+                  完全復元(JSON)
                 </button>
               </div>
 
@@ -730,7 +763,31 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               </div>
             </div>
 
-            {/* キーボードショートカットトグル */}
+            {/* 操作モード切り替え */}
+            <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground/90">操作モード</label>
+                <p className="text-[10px] text-foreground/45">ご利用の端末や好みに合わせた操作方式</p>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-1 bg-background/50 border border-foreground/5 rounded-xl p-1">
+                {(['auto', 'desktop', 'touch'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setOperationMode(mode)}
+                    className={`py-1.5 px-2 text-[10px] font-black rounded-lg transition-all border uppercase tracking-wider cursor-pointer ${
+                      operationMode === mode
+                        ? 'bg-neon-purple/10 border-neon-purple/35 text-neon-purple shadow-sm font-bold'
+                        : 'bg-transparent border-transparent text-foreground/45 hover:text-foreground/80'
+                    }`}
+                  >
+                    {mode === 'auto' ? 'Auto' : mode === 'desktop' ? 'Key' : 'Touch'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* キーボード操作トグル & ガイド */}
             <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-4">
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
@@ -748,34 +805,62 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 </label>
               </div>
 
-              {/* ショートカット説明 */}
+              {/* 操作説明ガイド (モードに応じて動的切り替え) */}
               <div className="space-y-2 pt-2 border-t border-foreground/5">
-                <span className="text-[10px] text-foreground/50 uppercase tracking-widest font-mono flex items-center gap-1">
-                  <HelpCircle className="w-3.5 h-3.5 text-neon-green" /> Key Bindings
+                <span className="text-[10px] text-foreground/50 uppercase tracking-widest font-mono flex items-center gap-1 font-bold">
+                  <HelpCircle className="w-3.5 h-3.5 text-neon-green" /> 
+                  {operationMode === 'touch' || (operationMode === 'auto' && typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) 
+                    ? 'Touch Gesture Guide' 
+                    : 'Key Bindings Guide'}
                 </span>
                 
-                <div className="space-y-1.5 text-xs text-foreground/60 font-medium">
-                  <div className="flex justify-between items-center py-1">
-                    <span>カードをめくる / 戻す</span>
-                    <kbd className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-green font-mono">Space</kbd>
+                {(operationMode === 'touch' || (operationMode === 'auto' && typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches)) ? (
+                  // ジェスチャー操作ガイド
+                  <div className="space-y-1.5 text-xs text-foreground/60 font-medium">
+                    <div className="flex justify-between items-center py-1">
+                      <span>カードをめくる / 戻す</span>
+                      <span className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-purple font-mono font-bold text-[10px]">タップ</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span>「話した！」 (使用済にして交代)</span>
+                      <span className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-purple font-mono font-bold text-[10px]">↑ フリック</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span>カードをパス</span>
+                      <span className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-purple font-mono font-bold text-[10px]">→ フリック</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span>全カードをシャッフルドロー</span>
+                      <span className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-purple font-mono font-bold text-[10px]">背景ダブルタップ</span>
+                    </div>
+                    <div className="text-[10px] text-slate-800 dark:text-neon-purple bg-slate-100 dark:bg-neon-purple/5 border border-slate-200 dark:border-neon-purple/20 rounded-lg p-2.5 leading-relaxed mt-2 shadow-sm dark:shadow-none font-semibold">
+                      Touch（フリック）操作モードは、スマートフォンやiPadなどのタブレット、2in1タッチPCで極めて快適に動作しますわ。
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span>「話した！」 (使用済にして交代)</span>
-                    <kbd className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-green font-mono">↑ キー</kbd>
+                ) : (
+                  // キーボード操作ガイド
+                  <div className="space-y-1.5 text-xs text-foreground/60 font-medium">
+                    <div className="flex justify-between items-center py-1">
+                      <span>カードをめくる / 戻す</span>
+                      <kbd className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-green font-mono">Space</kbd>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span>「話した！」 (使用済にして交代)</span>
+                      <kbd className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-green font-mono">↑ キー</kbd>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span>全カードをシャッフルドロー</span>
+                      <kbd className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-green font-mono">↓ キー</kbd>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span>カードの切り替え (カルーセル)</span>
+                      <kbd className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-green font-mono">← / → キー</kbd>
+                    </div>
+                    <div className="text-[10px] text-slate-800 dark:text-amber-200 bg-slate-100 dark:bg-amber-950/20 border border-slate-200 dark:border-amber-900/30 rounded-lg p-2.5 leading-relaxed mt-2 shadow-sm dark:shadow-none font-semibold">
+                      Discordや他アプリと並行して使用する場合は、ショートカットキーが意図せず入力されないようご注意ください。入力フォーム等にフォーカスがある時は自動的に機能が一時停止します。
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span>全カードをシャッフルドロー</span>
-                    <kbd className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-green font-mono">↓ キー</kbd>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span>カードの切り替え (カルーセル)</span>
-                    <kbd className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-green font-mono">← / → キー</kbd>
-                  </div>
-                </div>
-
-                <div className="text-[10px] text-slate-800 dark:text-amber-200 bg-slate-100 dark:bg-amber-950/20 border border-slate-200 dark:border-amber-900/30 rounded-lg p-2.5 leading-relaxed mt-2 shadow-sm dark:shadow-none font-semibold">
-                  Discordや他アプリと並行して使用する場合は、ショートカットキーが意図せず入力されないようご注意ください。入力フォーム等にフォーカスがある時は自動的に機能が一時停止します。
-                </div>
+                )}
               </div>
             </div>
 

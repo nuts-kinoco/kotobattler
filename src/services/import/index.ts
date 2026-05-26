@@ -23,6 +23,7 @@ export const importService = {
       storage.saveDecks(parsed.decks);
       if (parsed.persons) storage.savePersons(parsed.persons);
       if (parsed.session) storage.saveSession(parsed.session);
+      if (parsed.airModes) storage.saveAirModes(parsed.airModes);
       
       if (parsed.settings) {
         if (parsed.settings.theme) storage.saveTheme(parsed.settings.theme);
@@ -31,6 +32,7 @@ export const importService = {
         if (parsed.settings.shortcutEnabled !== undefined) storage.saveShortcutEnabled(parsed.settings.shortcutEnabled);
         if (parsed.settings.currentDeckId) storage.saveCurrentDeckId(parsed.settings.currentDeckId);
         if (parsed.settings.keepPreviousMembers !== undefined) storage.saveKeepPreviousMembers(parsed.settings.keepPreviousMembers);
+        if (parsed.settings.operationMode) storage.saveOperationMode(parsed.settings.operationMode);
       }
 
       return true;

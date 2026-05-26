@@ -10,7 +10,7 @@ export const STARTER_CARDS: Card[] = [
     text: "第一印象で「この人、このブキ使ってそう！」って思ったのってありました？(笑)",
     star: 2,
     tags: ["初対面", "スプラ"],
-    airSuitability: "初動",
+    airSuitability: "はじめまして",
     state: "unused",
     reappearRule: "once_per_person"
   },
@@ -20,7 +20,7 @@ export const STARTER_CARDS: Card[] = [
     text: "普段のVCでは、なんて呼ばれることが多いですか？(あだ名とかも歓迎です！)",
     star: 1,
     tags: ["初対面", "VC"],
-    airSuitability: "初動",
+    airSuitability: "はじめまして",
     state: "unused",
     reappearRule: "everytime"
   },
@@ -30,7 +30,7 @@ export const STARTER_CARDS: Card[] = [
     text: "スプラって初代(Wii U)からやってます？それとも2や3からデビューですか？",
     star: 2,
     tags: ["スプラ", "初対面"],
-    airSuitability: "初動",
+    airSuitability: "はじめまして",
     state: "unused",
     reappearRule: "once_per_person"
   },
@@ -40,7 +40,7 @@ export const STARTER_CARDS: Card[] = [
     text: "今いちばん使ってて楽しい、または使用度が高い「相棒ブキ」って何ですか？",
     star: 1,
     tags: ["スプラ", "定番"],
-    airSuitability: "初動",
+    airSuitability: "はじめまして",
     state: "unused",
     reappearRule: "once_per_person"
   },
@@ -50,7 +50,7 @@ export const STARTER_CARDS: Card[] = [
     text: "対戦中って、ガンガン前出るタイプですか？それともカバー重視で後ろ寄りですか？",
     star: 2,
     tags: ["スプラ", "立ち回り"],
-    airSuitability: "初動",
+    airSuitability: "はじめまして",
     state: "unused",
     reappearRule: "once_per_person"
   },
@@ -60,7 +60,7 @@ export const STARTER_CARDS: Card[] = [
     text: "スプラ以外に最近ハマってるゲームとかあります？実は〇〇やってる、とか！",
     star: 2,
     tags: ["初対面", "雑談"],
-    airSuitability: "初動",
+    airSuitability: "はじめまして",
     state: "unused",
     reappearRule: "once_per_person"
   },
@@ -168,7 +168,7 @@ export const STARTER_CARDS: Card[] = [
     text: "最近、ちょっとテンションが上がった出来事や、嬉しかったことってありました？",
     star: 3,
     tags: ["深夜", "雑談"],
-    airSuitability: "深夜",
+    airSuitability: "深夜帯",
     state: "unused",
     reappearRule: "once_per_person"
   },
@@ -178,7 +178,7 @@ export const STARTER_CARDS: Card[] = [
     text: "何時くらいになると「あ、もう頭働いてないしエイム崩壊してるな…」ってなります？(笑)",
     star: 2,
     tags: ["深夜", "VC"],
-    airSuitability: "深夜",
+    airSuitability: "深夜帯",
     state: "unused",
     reappearRule: "everytime"
   },
@@ -198,7 +198,7 @@ export const STARTER_CARDS: Card[] = [
     text: "いつもゲームプレイ中や、まったり遊んでる時って裏でどんな音楽聴いてます？",
     star: 3,
     tags: ["深夜", "日常"],
-    airSuitability: "深夜",
+    airSuitability: "深夜帯",
     state: "unused",
     reappearRule: "once_per_person"
   },
