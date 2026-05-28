@@ -376,44 +376,52 @@ export const useDeckState = () => {
   // 7. アクション系関数 (Card用)
   // ==========================================
   const useCard = useCallback((cardId: string) => {
+    // ──────────────────────────────────────────────────────────────────────
+    // Card.tsx 内の exit アニメーション(220ms)が完全に終わってから
+    // React の状態更新を走らせることで、アニメーション途中に次のカードが
+    // フラッシュ（点滅）する問題を根絶します。
+    // ──────────────────────────────────────────────────────────────────────
     const newUsedIds = session.isActive && !session.usedCardIds.includes(cardId)
       ? [...session.usedCardIds, cardId]
       : session.usedCardIds;
 
     const targetCard = cards.find(c => c.id === cardId);
-    let updatedPersons = [...persons];
-    
-    if (session.isActive && targetCard && targetCard.reappearRule !== 'everytime') {
-      updatedPersons = persons.map(person => {
-        if (session.activePersonIds.includes(person.id)) {
-          if (!person.usedCardIds.includes(cardId)) {
-            return {
-              ...person,
-              usedCardIds: [...person.usedCardIds, cardId]
-            };
-          }
-        }
-        return person;
-      });
-      savePersons(updatedPersons);
-    }
+    const currentPersons = [...persons];
 
-    const updatedCards = cards.map(c => 
-      c.id === cardId ? { ...c, state: 'used' as CardState } : c
-    );
-    saveCards(updatedCards);
-
-    saveSession({
-      ...session,
-      usedCardIds: newUsedIds
-    });
-
-    // カードの 'used' ステート更新コミットを先行させ、
-    // AnimatePresence が正しい exit アニメーション（真上へ飛ぶ）をフックできるようにディレイを設ける
+    // 全ての状態更新を1つの setTimeout に集約し、exit アニメーション完了後に一括実行
     setTimeout(() => {
+      // 1. セッション参加メンバーの使用済み記録
+      if (session.isActive && targetCard && targetCard.reappearRule !== 'everytime') {
+        const updatedPersons = currentPersons.map(person => {
+          if (session.activePersonIds.includes(person.id)) {
+            if (!person.usedCardIds.includes(cardId)) {
+              return {
+                ...person,
+                usedCardIds: [...person.usedCardIds, cardId]
+              };
+            }
+          }
+          return person;
+        });
+        savePersons(updatedPersons);
+      }
+
+      // 2. カードを使用済みに変更
+      const updatedCards = cards.map(c =>
+        c.id === cardId ? { ...c, state: 'used' as CardState } : c
+      );
+      saveCards(updatedCards);
+
+      // 3. セッション使用済みIDに追記
+      saveSession({
+        ...session,
+        usedCardIds: newUsedIds
+      });
+
+      // 4. 次のカードをドロー
       const remainingActiveIds = activeCardIds.filter(id => id !== cardId);
       drawCards(cardDisplayCount, remainingActiveIds);
-    }, 180);
+    }, 250); // Card.tsx の exit アニメーション 220ms より余裕を持たせた 250ms
 
   }, [cards, persons, session, activeCardIds, cardDisplayCount, drawCards]);
 

@@ -217,8 +217,10 @@ export const Card: React.FC<CardProps> = ({
     // 1. 上に引っ張り確定 → 使用済み
     if (dy < -PULL_THRESHOLD && onUse) {
       setIsExiting(true);
-      animate(cardY, -1000, { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] });
-      setTimeout(() => { onUse(); }, 220);
+      animate(cardY, -1000, { duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] });
+      // 状態更新のタイミング制御は useDeckState.useCard() 内の setTimeout(250ms) に完全委譲。
+      // ここでは即座に呼び出すのみでよい。
+      onUse();
       return;
     }
 
