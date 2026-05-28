@@ -330,11 +330,44 @@ export const useDeckState = () => {
   }, [cards, currentDeck, selectedAirSuitabilities, session, persons]);
 
   // ==========================================
-  // 6. ドローロジック
+  // 6. ドローロジック (引数に customCards を追加して非同期ステート遅延を根絶)
   // ==========================================
-  const drawCards = useCallback((count: number = cardDisplayCount, keepCardIds: string[] = []) => {
-    let pool = [...drawPool];
-    pool = pool.filter(c => !keepCardIds.includes(c.id));
+  const drawCards = useCallback((
+    count: number = cardDisplayCount, 
+    keepCardIds: string[] = [], 
+    customCards?: Card[]
+  ) => {
+    if (!currentDeck) return;
+    
+    const targetCards = customCards ?? cards;
+    const deckCards = targetCards.filter(c => currentDeck.cardIds.includes(c.id));
+    
+    const pool = deckCards.filter(card => {
+      if (card.state === 'sealed' || card.state === 'used') return false;
+
+      // 複数選択された空気感フィルター（OR条件）
+      if (selectedAirSuitabilities.length > 0) {
+        if (!card.airSuitability || !selectedAirSuitabilities.includes(card.airSuitability)) {
+          return false;
+        }
+      }
+
+      if (session.isActive && session.usedCardIds.includes(card.id)) {
+        if (card.reappearRule !== 'everytime') {
+          return false;
+        }
+      }
+
+      if (session.isActive && card.reappearRule !== 'everytime') {
+        const activePersons = persons.filter(p => session.activePersonIds.includes(p.id));
+        const isUsedByAnyActivePerson = activePersons.some(person => 
+          person.usedCardIds.includes(card.id)
+        );
+        if (isUsedByAnyActivePerson) return false;
+      }
+
+      return !keepCardIds.includes(card.id);
+    });
 
     const shuffled = pool.sort(() => 0.5 - Math.random());
     const needed = count - keepCardIds.length;
@@ -348,7 +381,7 @@ export const useDeckState = () => {
 
     setActiveCardIds(result);
     setActiveCardIndex(prev => Math.min(prev, Math.max(0, result.length - 1)));
-  }, [drawPool, cardDisplayCount]);
+  }, [cards, currentDeck, selectedAirSuitabilities, session, persons, cardDisplayCount]);
 
   useEffect(() => {
     if (cards.length > 0 && decks.length > 0) {
@@ -376,9 +409,8 @@ export const useDeckState = () => {
     }));
     savePersons(updatedPersons);
 
-    setTimeout(() => {
-      drawCards(cardDisplayCount);
-    }, 50);
+    // タイマーを完全排除し、直接 updatedCards を渡して即時かつ100%確実に配分を完了する！
+    drawCards(cardDisplayCount, [], updatedCards);
   }, [cards, session, persons, cardDisplayCount, drawCards]);
 
   // ==========================================
@@ -427,9 +459,9 @@ export const useDeckState = () => {
         usedCardIds: newUsedIds
       });
 
-      // 4. 次のカードをドロー
+      // 4. 次のカードをドロー (最新の updatedCards を直接渡してバッチング遅延を排除)
       const remainingActiveIds = activeCardIds.filter(id => id !== cardId);
-      drawCards(cardDisplayCount, remainingActiveIds);
+      drawCards(cardDisplayCount, remainingActiveIds, updatedCards);
     }, 250); // Card.tsx の exit アニメーション 220ms より余裕を持たせた 250ms
 
   }, [cards, persons, session, activeCardIds, cardDisplayCount, drawCards]);

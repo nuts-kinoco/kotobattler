@@ -282,19 +282,28 @@ export const CardDeck: React.FC<CardDeckProps> = ({
               const isActive = index === activeCardIndex;
               const isFlipped = alwaysOpen ? true : !!flippedStates[card.id];
 
-              // 3枚以上の場合のフォーカス効果
+              // 3枚以上の場合のフォーカス効果（Framer Motionで滑らかに表現するために値を定義）
               let zIndex = 0;
-              let transformClass = '';
+              let targetX = 0;
+              let targetY = 0;
+              let targetRotate = 0;
+              let targetScale = isActive ? 1 : 0.95;
               
               if (isActive) {
                 zIndex = 20;
-                transformClass = 'translate-y-0 scale-100 z-20';
+                targetX = 0;
+                targetY = 0;
+                targetRotate = 0;
               } else if (index < activeCardIndex) {
                 zIndex = 10 - (activeCardIndex - index);
-                transformClass = '-translate-x-8 -translate-y-1 scale-95 rotate-[-0.5deg]';
+                targetX = -32; // -translate-x-8
+                targetY = -4;  // -translate-y-1
+                targetRotate = -0.5;
               } else {
                 zIndex = 10 - (index - activeCardIndex);
-                transformClass = 'translate-x-8 -translate-y-1 scale-95 rotate-[0.5deg]';
+                targetX = 32;  // translate-x-8
+                targetY = -4;  // -translate-y-1
+                targetRotate = 0.5;
               }
 
               return (
@@ -304,15 +313,22 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   initial={{ 
                     opacity: 0, 
                     scale: 0.95, 
-                    y: 20 
+                    y: 20,
+                    x: targetX,
+                    rotate: targetRotate
                   }}
                   animate={{ 
                     opacity: 1, 
-                    scale: isActive ? 1 : 0.95,
-                    transition: {
-                      duration: 0.25,
-                      ease: "easeOut"
-                    }
+                    scale: targetScale,
+                    x: targetX,
+                    y: targetY,
+                    rotate: targetRotate
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 26,
+                    layout: { duration: 0.25 }
                   }}
                   exit={
                     getExitType(card.id) === 'touch'
@@ -324,7 +340,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                       // パスexit: 横にスライドアウト
                       : { opacity: 0, x: 500, scale: 0.85, transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] } }
                   }
-                  className={`transition-all duration-500 ease-out transform ${transformClass}`}
+                  className="relative shrink-0"
                   style={{ zIndex }}
                 >
                   <Card
