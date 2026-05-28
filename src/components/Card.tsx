@@ -191,10 +191,10 @@ export const Card: React.FC<CardProps> = ({
       onTouchEnd={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
-      drag={isActive && isTouch && !isLeaving && !isExiting}
-      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-      dragElastic={0.65}
-      dragTransition={{ bounceStiffness: 600, bounceDamping: 30 }}
+      drag={isActive && isTouch && !isLeaving && !isExiting ? "y" : false}
+      dragConstraints={{ top: -300, bottom: 0 }}
+      dragElastic={0.15} // タッチの微小なブレ・チャタリングを吸収し、しっとり吸い付く高級感のあるドラッグへ
+      dragTransition={{ bounceStiffness: 400, bounceDamping: 40 }}
       onDragStart={handleDragStart}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
