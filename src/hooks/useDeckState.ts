@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Deck, Person, Session, AirSuitability, CardState, AirMode, OperationMode } from '../types/deck';
-import { STARTER_CARDS, STARTER_DECKS } from '../data/starterDeck';
+import { STARTER_CARDS, STARTER_DECKS, STARTER_AIR_MODES } from '../data/starterDeck';
 import { storage, DEFAULT_AIR_MODES } from '../services/storage';
 import { backupService } from '../services/backup';
 import { importService } from '../services/import';
@@ -119,8 +119,19 @@ export const useDeckState = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // 1. 各種データを例外安全なstorageサービスから復元
-      const loadedCards = storage.loadCards(STARTER_CARDS);
-      const loadedDecks = storage.loadDecks(STARTER_DECKS);
+      const rawLoadedCards = storage.loadCards(STARTER_CARDS);
+      const rawLoadedDecks = storage.loadDecks(STARTER_DECKS);
+      
+      // カスタムカード（ユーザーがロッカーで手動追加したお題）は残しつつ、スターターカード部分は最新のCSV（STARTER_CARDS）に上書き同期
+      const starterCardIds = new Set(STARTER_CARDS.map(c => c.id));
+      const customCards = rawLoadedCards.filter(c => !starterCardIds.has(c.id));
+      const loadedCards = [...STARTER_CARDS, ...customCards];
+
+      // スターターデッキ（STARTER_DECKS）は最新のものを使いつつ、ユーザー作成カスタムデッキがあれば残す
+      const starterDeckIds = new Set(STARTER_DECKS.map(d => d.id));
+      const customDecks = rawLoadedDecks.filter(d => !starterDeckIds.has(d.id));
+      const loadedDecks = [...STARTER_DECKS, ...customDecks];
+
       const loadedPersons = storage.loadPersons([]);
       const loadedSession = storage.loadSession({ isActive: false, activePersonIds: [], usedCardIds: [] });
       const loadedDeckId = storage.loadCurrentDeckId('deck-all');
@@ -128,8 +139,15 @@ export const useDeckState = () => {
       const loadedShortcut = storage.loadShortcutEnabled(true);
       const loadedTheme = storage.loadTheme('dark');
       const loadedKeepPrevious = storage.loadKeepPreviousMembers(true);
-      const loadedAirModes = storage.loadAirModes(DEFAULT_AIR_MODES);
-      const loadedSelectedAirs = storage.loadSelectedAirSuitabilities([]);
+
+      // 最新のCSVのairから自動生成されたSTARTER_AIR_MODESを強制同期（これにより画面のMOODフィルターがCSVに完全追従）
+      const loadedAirModes = STARTER_AIR_MODES;
+      
+      // 選択されている空気感フィルターをロード（もし削除された空気感が選択されていた場合は自動クリア）
+      const rawSelectedAirs = storage.loadSelectedAirSuitabilities([]);
+      const activeAirNames = new Set(STARTER_AIR_MODES.map(a => a.name));
+      const loadedSelectedAirs = rawSelectedAirs.filter(a => activeAirNames.has(a));
+
       const loadedOpMode = storage.loadOperationMode('auto');
       const loadedGestureHint = storage.loadHasSeenGestureHint(false);
       const loadedAlwaysOpen = storage.loadAlwaysOpen(false);
@@ -148,6 +166,12 @@ export const useDeckState = () => {
       setOperationMode(loadedOpMode);
       setHasSeenGestureHint(loadedGestureHint);
       setAlwaysOpen(loadedAlwaysOpen);
+
+      // 同期された最新データをLocalStorageへも保存（二重キャッシュ更新）
+      storage.saveCards(loadedCards);
+      storage.saveDecks(loadedDecks);
+      storage.saveAirModes(loadedAirModes);
+      storage.saveSelectedAirSuitabilities(loadedSelectedAirs);
 
       // 初回テーマのCSSクラス適用
       applyTheme(loadedTheme);

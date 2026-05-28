@@ -1,4 +1,4 @@
-import { Card, Deck } from '../types/deck';
+import { Card, Deck, AirMode } from '../types/deck';
 
 export const STARTER_CARDS: Card[] = [
   {
@@ -772,5 +772,36 @@ export const STARTER_DECKS: Deck[] = [
       "r-43",
       "r-44"
     ]
+  }
+];
+
+export const STARTER_AIR_MODES: AirMode[] = [
+  {
+    "id": "air-intro",
+    "name": "はじめまして"
+  },
+  {
+    "id": "air-chat",
+    "name": "雑談"
+  },
+  {
+    "id": "air-meta",
+    "name": "メタ"
+  },
+  {
+    "id": "air-drink",
+    "name": "飲酒トゥーン"
+  },
+  {
+    "id": "air-unspoken",
+    "name": "無言時"
+  },
+  {
+    "id": "air-loss",
+    "name": "連敗中"
+  },
+  {
+    "id": "air-throw",
+    "name": "戦犯したとき"
   }
 ];

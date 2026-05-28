@@ -160,11 +160,43 @@ const decks = [
 // 空のcardIdsを持つデッキは除外
 const filteredDecks = decks.filter(d => d.cardIds.length > 0);
 
-const tsContent = `import { Card, Deck } from '../types/deck';
+// CSVから動的に空気感モード（MOOD）を抽出してSTARTER_AIR_MODESを生成
+const uniqueAirs = Array.from(new Set(cards.map(c => c.airSuitability)));
+const airPriority = ['はじめまして', '雑談', 'メタ', '飲酒トゥーン', '無言時', '連敗中', '戦犯したとき', '深夜帯', '疲れ気味', '静か', '盛り上がり', '普通'];
+uniqueAirs.sort((a, b) => {
+  let idxA = airPriority.indexOf(a);
+  let idxB = airPriority.indexOf(b);
+  if (idxA === -1) idxA = 999;
+  if (idxB === -1) idxB = 999;
+  return idxA - idxB;
+});
+
+const airModes = uniqueAirs.map((air, index) => {
+  const prefixMap = {
+    'はじめまして': 'intro',
+    '深夜帯': 'midnight',
+    '疲れ気味': 'tired',
+    '静か': 'silent',
+    '盛り上がり': 'hype',
+    '雑談': 'chat',
+    'メタ': 'meta',
+    '飲酒トゥーン': 'drink',
+    '連敗中': 'loss',
+    '無言時': 'unspoken',
+    '戦犯したとき': 'throw',
+    '普通': 'normal'
+  };
+  const id = `air-${prefixMap[air] || `custom-${index}`}`;
+  return { id, name: air };
+});
+
+const tsContent = `import { Card, Deck, AirMode } from '../types/deck';
 
 export const STARTER_CARDS: Card[] = ${JSON.stringify(cards, null, 2)};
 
 export const STARTER_DECKS: Deck[] = ${JSON.stringify(filteredDecks, null, 2)};
+
+export const STARTER_AIR_MODES: AirMode[] = ${JSON.stringify(airModes, null, 2)};
 `;
 
 fs.writeFileSync(tsOutputPath, tsContent, 'utf-8');
