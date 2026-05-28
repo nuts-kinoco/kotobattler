@@ -406,6 +406,8 @@ export default function Home() {
               opMode={state.activeOpMode}
               onUseCard={handleUseCardWrapper}
               onSkipCard={handleSkipCardWrapper}
+              selectedAirSuitabilities={state.selectedAirSuitabilities}
+              onClearAirFilters={() => state.setSelectedAirSuitabilities([])}
             />
           </main>
 

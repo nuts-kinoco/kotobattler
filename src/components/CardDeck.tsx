@@ -18,6 +18,8 @@ interface CardDeckProps {
   opMode?: 'desktop' | 'touch';
   onUseCard?: (cardId: string) => void;
   onSkipCard?: (cardId: string) => void;
+  selectedAirSuitabilities?: string[]; // アクティブな空気感フィルターリストを受け取る
+  onClearAirFilters?: () => void;      // 空気感フィルターをその場でクリアするアクション
 }
 
 export const CardDeck: React.FC<CardDeckProps> = ({
@@ -31,7 +33,9 @@ export const CardDeck: React.FC<CardDeckProps> = ({
   onResetUsedCards,
   opMode = 'desktop',
   onUseCard,
-  onSkipCard
+  onSkipCard,
+  selectedAirSuitabilities = [],
+  onClearAirFilters
 }) => {
   const isCompact = displaySize === 'small' || displaySize === 'medium';
 
@@ -51,6 +55,11 @@ export const CardDeck: React.FC<CardDeckProps> = ({
   };
 
   if (displayCards.length === 0) {
+    // 現在空気感フィルターで絞り込まれている（All以外が指定されている）かを厳密に判定
+    const hasActiveAirFilters = selectedAirSuitabilities && 
+      selectedAirSuitabilities.length > 0 && 
+      !selectedAirSuitabilities.includes('All');
+
     return (
       <div className={`flex flex-col items-center justify-center glass-panel rounded-3xl p-8 border border-white/5 space-y-5 shadow-2xl relative overflow-hidden bg-gradient-to-b from-indigo-950/20 to-background/90 ${
         isCompact ? 'h-80 w-80 rounded-2xl' : 'h-[400px] w-full max-w-md'
@@ -61,29 +70,44 @@ export const CardDeck: React.FC<CardDeckProps> = ({
 
         <div className="relative z-10 flex flex-col items-center text-center space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-neon-green/20 to-emerald-500/10 border border-neon-green/30 flex items-center justify-center shadow-lg transform rotate-6 animate-pulse select-none">
-            <span className="text-3xl">🦑🎉</span>
+            <span className="text-3xl">{hasActiveAirFilters ? '🔍🦑' : '🦑🎉'}</span>
           </div>
           
           <div className="space-y-1.5">
             <h3 className="font-black text-base sm:text-lg text-neon-green tracking-wider uppercase">
-              Wipeout！
+              {hasActiveAirFilters ? 'No Cards Found' : 'Wipeout！'}
             </h3>
             <p className="text-sm font-bold text-foreground/90">
-              すべてのカードを使い切りました。イカす！
+              {hasActiveAirFilters 
+                ? '該当する空気感のお題がありません' 
+                : 'すべてのカードを使い切りました。イカす！'}
             </p>
             <p className="text-[11px] text-foreground/50 leading-relaxed max-w-xs px-2">
-              山札を戻して、カードをシャッフルします。
+              {hasActiveAirFilters 
+                ? `選択中の空気感「${selectedAirSuitabilities.join(', ')}」に一致する未使用カードがありません。フィルターをクリアするか、山札を戻してください。`
+                : '山札を戻して、カードをシャッフルします。'}
             </p>
           </div>
 
-          {onResetUsedCards && (
-            <button
-              onClick={onResetUsedCards}
-              className="mt-2 px-5 py-3 rounded-2xl bg-neon-green hover:bg-emerald-400 text-background dark:text-slate-950 text-xs font-black tracking-wider transition-all duration-300 shadow-lg hover:shadow-neon-green/20 hover:scale-105 active:scale-95 flex items-center gap-2 border border-neon-green/35 cursor-pointer"
-            >
-              <span className="text-sm">🔄</span> 山札を戻してシャッフル！
-            </button>
-          )}
+          <div className="flex flex-col gap-2.5 w-full max-w-[240px] mt-2">
+            {hasActiveAirFilters && onClearAirFilters && (
+              <button
+                onClick={onClearAirFilters}
+                className="px-5 py-3 rounded-2xl bg-neon-purple hover:bg-violet-500 text-foreground text-xs font-black tracking-wider transition-all duration-300 shadow-lg hover:shadow-neon-purple/20 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-neon-purple/35 cursor-pointer"
+              >
+                <span>✨</span> 空気感フィルターをクリア
+              </button>
+            )}
+
+            {onResetUsedCards && (
+              <button
+                onClick={onResetUsedCards}
+                className="px-5 py-3 rounded-2xl bg-neon-green hover:bg-emerald-400 text-background dark:text-slate-950 text-xs font-black tracking-wider transition-all duration-300 shadow-lg hover:shadow-neon-green/20 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 border border-neon-green/35 cursor-pointer"
+              >
+                <span>🔄</span> 山札を戻してシャッフル！
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
