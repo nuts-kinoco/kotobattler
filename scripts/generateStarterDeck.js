@@ -9,7 +9,8 @@ if (!fs.existsSync(csvPath)) {
   process.exit(1);
 }
 
-const csvContent = fs.readFileSync(csvPath, 'utf-8');
+// BOM（\uFEFF）を除去しつつUTF-8で読み込む
+const csvContent = fs.readFileSync(csvPath, 'utf-8').replace(/^\uFEFF/, '');
 // 改行コード（CRLF, LF）に対応して行分割
 const lines = csvContent.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
@@ -51,28 +52,39 @@ const cards = [];
 
 for (let i = 1; i < lines.length; i++) {
   const row = parseCSVLine(lines[i]);
-  if (row.length === 0 || !row[textIdx]) continue;
+  // textが空の行はスキップ（空行など）
+  if (row.length === 0 || !row[textIdx] || !row[textIdx].trim()) continue;
 
   const text = row[textIdx].trim();
   const title = titleIdx !== -1 && row[titleIdx] ? row[titleIdx].trim() : '';
   const star = starIdx !== -1 && row[starIdx] ? parseInt(row[starIdx]) : 3;
   const tags = tagsIdx !== -1 && row[tagsIdx] ? row[tagsIdx].split(';').map(t => t.trim()).filter(Boolean) : [];
-  const airSuitability = airIdx !== -1 && row[airIdx] ? row[airIdx].trim() : '普通';
+  const airSuitability = airIdx !== -1 && row[airIdx] && row[airIdx].trim() ? row[airIdx].trim() : '雑談';
   
-  // CSVの「rule」カラムから再出現ルール（人物墓地設定など）を読み込む
-  let reappearRule = 'session_graveyard';
-  if (ruleIdx !== -1 && row[ruleIdx]) {
+  // CSVの「rule」カラムから再出現ルールを読み込む（空の場合はonce_per_personをデフォルト）
+  let reappearRule = 'once_per_person';
+  if (ruleIdx !== -1 && row[ruleIdx] && row[ruleIdx].trim()) {
     const r = row[ruleIdx].trim();
     if (['everytime', 'session_graveyard', 'once_per_person', 'cooldown'].includes(r)) {
       reappearRule = r;
     }
   }
 
-  // 固有IDを割り当て
-  const prefix = airSuitability === 'はじめまして' ? 'h' : 
-                 airSuitability === '深夜帯' ? 's' : 
-                 airSuitability === '疲れ気味' || airSuitability === '静か' ? 's' : 
-                 airSuitability === '盛り上がり' ? 'k' : 'z';
+  // 固有IDをairSuitabilityに基づいて割り当て
+  const prefixMap = {
+    'はじめまして': 'h',
+    '深夜帯': 'n',
+    '疲れ気味': 'x',
+    '静か': 'q',
+    '盛り上がり': 'k',
+    '雑談': 'z',
+    'メタ': 'm',
+    '飲酒トゥーン': 'd',
+    '連敗中': 'r',
+    '無言時': 'u',
+    '戦犯したとき': 'b',
+  };
+  const prefix = prefixMap[airSuitability] || 'z';
   const id = `${prefix}-${i}`;
 
   cards.push({
@@ -87,7 +99,7 @@ for (let i = 1; i < lines.length; i++) {
   });
 }
 
-// デッキの自動生成
+// デッキの自動生成（CSVのairSuitability値に対応）
 const decks = [
   {
     id: "deck-all",
@@ -105,7 +117,7 @@ const decks = [
     id: "deck-chat",
     name: "💬 雑談メイン",
     description: "プレイスタイルやゲームの内外のことで自然に話が弾むカード。",
-    cardIds: cards.filter(c => c.tags.includes("雑談") || c.tags.includes("ギア") || c.airSuitability === "普通").map(c => c.id)
+    cardIds: cards.filter(c => c.airSuitability === "雑談" || c.tags.includes("雑談") || c.tags.includes("ギア")).map(c => c.id)
   },
   {
     id: "deck-night",
@@ -117,16 +129,47 @@ const decks = [
     id: "deck-fix",
     name: "💥 沈黙打破・ネタ",
     description: "静かになってしまった時や、ちょっと笑いが欲しい時のカード。",
-    cardIds: cards.filter(c => c.tags.includes("ネタ") || c.tags.includes("共感") || c.airSuitability === "盛り上がり").map(c => c.id)
+    cardIds: cards.filter(c => c.tags.includes("ネタ") || c.tags.includes("空気変え") || c.airSuitability === "盛り上がり" || c.airSuitability === "連敗中").map(c => c.id)
+  },
+  {
+    id: "deck-meta",
+    name: "🎮 メタ・リアル話",
+    description: "ゲームを離れた日常やリアルな話題のカード。",
+    cardIds: cards.filter(c => c.airSuitability === "メタ" || c.tags.includes("メタ")).map(c => c.id)
+  },
+  {
+    id: "deck-drink",
+    name: "🍺 飲酒トゥーン",
+    description: "お酒を飲みながら盛り上がるためのカード集。",
+    cardIds: cards.filter(c => c.airSuitability === "飲酒トゥーン" || c.tags.includes("飲酒")).map(c => c.id)
+  },
+  {
+    id: "deck-silent",
+    name: "🤐 無言いじり",
+    description: "無言になってしまった時にそっと場を動かすカード。",
+    cardIds: cards.filter(c => c.airSuitability === "無言時").map(c => c.id)
+  },
+  {
+    id: "deck-loss",
+    name: "💀 連敗・戦犯タイム",
+    description: "連敗中や戦犯してしまった時の空気を変えるカード。",
+    cardIds: cards.filter(c => c.airSuitability === "連敗中" || c.airSuitability === "戦犯したとき").map(c => c.id)
   }
 ];
+
+// 空のcardIdsを持つデッキは除外
+const filteredDecks = decks.filter(d => d.cardIds.length > 0);
 
 const tsContent = `import { Card, Deck } from '../types/deck';
 
 export const STARTER_CARDS: Card[] = ${JSON.stringify(cards, null, 2)};
 
-export const STARTER_DECKS: Deck[] = ${JSON.stringify(decks, null, 2)};
+export const STARTER_DECKS: Deck[] = ${JSON.stringify(filteredDecks, null, 2)};
 `;
 
 fs.writeFileSync(tsOutputPath, tsContent, 'utf-8');
-console.log(`Successfully generated starterDeck.ts with ${cards.length} cards from CSV!`);
+console.log(`Successfully generated starterDeck.ts with ${cards.length} cards and ${filteredDecks.length} decks from CSV!`);
+console.log('Air suitability breakdown:');
+const airCounts = {};
+cards.forEach(c => { airCounts[c.airSuitability] = (airCounts[c.airSuitability] || 0) + 1; });
+Object.entries(airCounts).forEach(([air, count]) => console.log(`  ${air}: ${count}枚`));

@@ -3,12 +3,12 @@ import { Card, Deck } from '../types/deck';
 export const STARTER_CARDS: Card[] = [
   {
     "id": "h-1",
-    "title": "第一印象のブキ",
-    "text": "第一印象で「この人、このブキ使ってそう！」って思ったのってありました？(笑)",
-    "star": 2,
+    "title": "自己紹介",
+    "text": "まずは簡単な挨拶",
+    "star": 3,
     "tags": [
       "初対面",
-      "スプラ"
+      "定番"
     ],
     "airSuitability": "はじめまして",
     "state": "unused",
@@ -16,25 +16,25 @@ export const STARTER_CARDS: Card[] = [
   },
   {
     "id": "h-2",
-    "title": "普段の呼び方",
-    "text": "普段のVCでは、なんて呼ばれることが多いですか？(あだ名とかも歓迎です！)",
-    "star": 1,
+    "title": "名前の由来",
+    "text": "スプラネームの由来ってなんですか？",
+    "star": 3,
     "tags": [
       "初対面",
-      "VC"
+      "定番"
     ],
     "airSuitability": "はじめまして",
     "state": "unused",
-    "reappearRule": "everytime"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "h-3",
-    "title": "いつからのスプラ勢？",
-    "text": "スプラって初代(Wii U)からやってます？それとも2や3からデビューですか？",
-    "star": 2,
+    "title": "スプラデビューの時期",
+    "text": "スプラデビューは初代(Wii U)から？それとも2や3からデビューですか？",
+    "star": 3,
     "tags": [
-      "スプラ",
-      "初対面"
+      "初対面",
+      "定番"
     ],
     "airSuitability": "はじめまして",
     "state": "unused",
@@ -42,11 +42,11 @@ export const STARTER_CARDS: Card[] = [
   },
   {
     "id": "h-4",
-    "title": "今いちばんの相棒ブキ",
-    "text": "今いちばん使ってて楽しい、または使用度が高い「相棒ブキ」って何ですか？",
-    "star": 1,
+    "title": "持ちブキ",
+    "text": "持ちブキはなんですか？",
+    "star": 3,
     "tags": [
-      "スプラ",
+      "初対面",
       "定番"
     ],
     "airSuitability": "はじめまして",
@@ -55,12 +55,12 @@ export const STARTER_CARDS: Card[] = [
   },
   {
     "id": "h-5",
-    "title": "いつもの立ち位置",
-    "text": "対戦中って、ガンガン前出るタイプですか？それともカバー重視で後ろ寄りですか？",
-    "star": 2,
+    "title": "好きな(得意な)ルール",
+    "text": "好きな(得意な)ルールってなんですか？",
+    "star": 3,
     "tags": [
-      "スプラ",
-      "立ち回り"
+      "初対面",
+      "定番"
     ],
     "airSuitability": "はじめまして",
     "state": "unused",
@@ -68,12 +68,12 @@ export const STARTER_CARDS: Card[] = [
   },
   {
     "id": "h-6",
-    "title": "スプラ以外のゲーム",
-    "text": "スプラ以外に最近ハマってるゲームとかあります？実は〇〇やってる、とか！",
-    "star": 2,
+    "title": "好きな(得意な)ステージ",
+    "text": "好きな(得意な)ステージってなんですか？",
+    "star": 3,
     "tags": [
       "初対面",
-      "雑談"
+      "定番"
     ],
     "airSuitability": "はじめまして",
     "state": "unused",
@@ -81,300 +81,527 @@ export const STARTER_CARDS: Card[] = [
   },
   {
     "id": "z-7",
-    "title": "今日の調子どう？",
-    "text": "ぶっちゃけ今日って調子いい日ですか？(勝ち越せてる？エイム合ってる？笑)",
-    "star": 1,
+    "title": "コーデ派？機能派？",
+    "text": "ギアはコーデして作ってます？それとも機能重視？",
+    "star": 3,
     "tags": [
       "雑談",
-      "VC"
+      "ギア"
     ],
-    "airSuitability": "普通",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "everytime"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "z-8",
     "title": "お気に入りギア",
-    "text": "最近「見た目も性能も最高！」って気に入ってるギア構成とかあります？",
-    "star": 2,
+    "text": "気に入ってるギアとかってあります？",
+    "star": 3,
     "tags": [
-      "スプラ",
+      "雑談",
       "ギア"
     ],
-    "airSuitability": "普通",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "z-9",
-    "title": "深夜の飯テロ誘惑",
-    "text": "この時間帯って、急にお腹空きません？いま何が一番食べたい気分ですか？",
-    "star": 1,
+    "title": "コントローラ感度",
+    "text": "感度ってどのくらいに設定してますか？",
+    "star": 3,
     "tags": [
       "雑談",
-      "深夜"
+      "プレイスタイル"
     ],
-    "airSuitability": "普通",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "everytime"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "z-10",
-    "title": "ステージの得意得意",
-    "text": "いまのローテーションのステージ、得意な方ですか？それとも鬼門ですか？(笑)",
-    "star": 1,
+    "title": "プロコン派？ジョイコン派？",
+    "text": "プロコン派？ジョイコン派？サードパーティコン？とか？",
+    "star": 3,
     "tags": [
-      "スプラ",
-      "ステージ"
+      "雑談",
+      "プレイスタイル"
     ],
-    "airSuitability": "普通",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "z-11",
-    "title": "エイムの浮き沈み",
-    "text": "エイムが吸い付く神の日と、全然当たらないダメな日の差、すごくないですか？(笑)",
-    "star": 2,
+    "title": "Switch2買えた？",
+    "text": "Switch2買えました？",
+    "star": 3,
     "tags": [
-      "スプラ",
-      "共感"
+      "雑談"
     ],
-    "airSuitability": "普通",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "z-12",
     "title": "思い出のベストフェス",
-    "text": "これまで遊んできた中で「一番楽しかった・テーマが熱かった」フェスって何ですか？",
-    "star": 2,
+    "text": "今まで一番楽しかった・テーマが熱かったフェスって何ですか？",
+    "star": 3,
     "tags": [
-      "スプラ",
-      "フェス"
+      "雑談"
     ],
-    "airSuitability": "普通",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "z-13",
-    "title": "VC中のお供ドリンク",
-    "text": "VCしながら遊ぶときって、手元に飲み物やお菓子とか準備しておく派ですか？",
-    "star": 1,
+    "title": "プレイスタイル",
+    "text": "塗りとキルどっちが好きですか？",
+    "star": 3,
     "tags": [
-      "VC",
-      "雑談"
+      "雑談",
+      "プレイスタイル"
     ],
-    "airSuitability": "普通",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "z-14",
-    "title": "バンカラ派？バイト派？",
-    "text": "普段はバンカラマッチ(ナワバリ)派ですか製？それともサーモンランばっかりやる派ですか？",
-    "star": 2,
+    "title": "打開と抑え",
+    "text": "打開と抑えどっちが好き(苦手)ですか？",
+    "star": 3,
     "tags": [
-      "スプラ",
-      "定番"
+      "雑談",
+      "プレイスタイル"
     ],
-    "airSuitability": "普通",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "z-15",
-    "title": "デスした瞬間のクセ",
-    "text": "デスした瞬間、ついついコントローラーぎゅって握りしめたり声出たりしちゃいません？(笑)",
-    "star": 2,
+    "title": "苦手なブキ",
+    "text": "相手にすると苦手なブキ派ありますか？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "ブキ"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "m-16",
+    "title": "休日の過ごし方",
+    "text": "休みの日ってなにして過ごします？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "メタ"
+    ],
+    "airSuitability": "メタ",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "m-17",
+    "title": "仕事は？",
+    "text": "(差し支えなければ)何系のお仕事されてるとか聞いてもいいですか？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "メタ",
+      "仕事"
+    ],
+    "airSuitability": "メタ",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "u-18",
+    "title": "無言いじり",
+    "text": "今みんな何喋ろうか探ってる時間笑",
+    "star": 3,
     "tags": [
       "スプラ",
       "共感"
     ],
-    "airSuitability": "普通",
+    "airSuitability": "無言時",
     "state": "unused",
     "reappearRule": "session_graveyard"
   },
   {
-    "id": "s-16",
-    "title": "最近のプチハッピー",
-    "text": "最近、ちょっとテンションが上がった出来事や、嬉しかったことってありました？",
+    "id": "m-19",
+    "title": "定時上がり",
+    "text": "今日定時で帰れました？",
     "star": 3,
     "tags": [
-      "深夜",
+      "雑談",
+      "メタ",
+      "仕事"
+    ],
+    "airSuitability": "メタ",
+    "state": "unused",
+    "reappearRule": "session_graveyard"
+  },
+  {
+    "id": "r-20",
+    "title": "いったん別ルール",
+    "text": "あかん、一旦ナワバリ(サモラン)挟みますか！笑",
+    "star": 3,
+    "tags": [
+      "空気変え",
+      "ネタ"
+    ],
+    "airSuitability": "連敗中",
+    "state": "unused",
+    "reappearRule": "session_graveyard"
+  },
+  {
+    "id": "r-21",
+    "title": "いったんブキチェンジ",
+    "text": "いったんブキ変えてこの流れ変えますわ！",
+    "star": 3,
+    "tags": [
+      "空気変え",
+      "ネタ"
+    ],
+    "airSuitability": "連敗中",
+    "state": "unused",
+    "reappearRule": "session_graveyard"
+  },
+  {
+    "id": "b-22",
+    "title": "死にすぎた",
+    "text": "生存重視ってモニタにマジックで書いときますわ",
+    "star": 3,
+    "tags": [
+      "自虐",
+      "ネタ"
+    ],
+    "airSuitability": "戦犯したとき",
+    "state": "unused",
+    "reappearRule": "session_graveyard"
+  },
+  {
+    "id": "h-23",
+    "title": "プレイ時間帯",
+    "text": "普段は何時くらいにプレイしているんですか？",
+    "star": 3,
+    "tags": [
+      "初対面",
+      "定番"
+    ],
+    "airSuitability": "はじめまして",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "h-24",
+    "title": "好きなスペシャル",
+    "text": "好きなスペシャルってありますか？",
+    "star": 3,
+    "tags": [
+      "初対面",
+      "定番"
+    ],
+    "airSuitability": "はじめまして",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "h-25",
+    "title": "苦手なルール",
+    "text": "苦手なルールってありますか？",
+    "star": 3,
+    "tags": [
+      "初対面",
+      "定番"
+    ],
+    "airSuitability": "はじめまして",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "h-26",
+    "title": "ハマってる他ゲー",
+    "text": "スプラ以外にハマってるゲームってありますか？",
+    "star": 3,
+    "tags": [
+      "初対面",
+      "定番"
+    ],
+    "airSuitability": "はじめまして",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "z-27",
+    "title": "好きなサブ",
+    "text": "好きなサブってありますか？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "ブキ"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "z-28",
+    "title": "一番使ってないブキ",
+    "text": "今一番使ってないブキってなんですか？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "ブキ"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "z-29",
+    "title": "TV派？モニタ派？",
+    "text": "TVとモニタどっちでやってます？携帯モードとか？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "プレイスタイル"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "z-30",
+    "title": "フェス好き？",
+    "text": "フェスってえいえんまでプレイします？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "フェス"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "z-31",
+    "title": "味方に来ると嬉しいブキ",
+    "text": "味方に来ると嬉しいブキってありますか？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "ブキ"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "z-32",
+    "title": "飲酒トゥーン",
+    "text": "飲酒トゥーンとかってやります？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "飲酒"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "z-33",
+    "title": "おすすめのギア",
+    "text": "このブキ(今使ってるブキ)ってなんのギアがおすすめですか？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "ブキ"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "z-34",
+    "title": "好きな配信者",
+    "text": "好きな(おすすめの)配信者とかっています？",
+    "star": 3,
+    "tags": [
       "雑談"
     ],
-    "airSuitability": "深夜帯",
+    "airSuitability": "雑談",
     "state": "unused",
     "reappearRule": "once_per_person"
   },
   {
-    "id": "s-17",
-    "title": "エイムの寝落ち限界線",
-    "text": "何時くらいになると「あ、もう頭働いてないしエイム崩壊してるな…」ってなります？(笑)",
-    "star": 2,
-    "tags": [
-      "深夜",
-      "VC"
-    ],
-    "airSuitability": "深夜帯",
-    "state": "unused",
-    "reappearRule": "everytime"
-  },
-  {
-    "id": "s-18",
-    "title": "持ちブキ迷子の夜",
-    "text": "たまに「私の持ちブキ、本当にこれで合ってるのかな…？」って迷子になる夜ありません？",
-    "star": 2,
-    "tags": [
-      "スプラ",
-      "共感"
-    ],
-    "airSuitability": "静か",
-    "state": "unused",
-    "reappearRule": "session_graveyard"
-  },
-  {
-    "id": "s-19",
-    "title": "プレイ中に流す音楽",
-    "text": "いつもゲームプレイ中や、まったり遊んでる時って裏でどんな音楽聴いてます？",
+    "id": "z-35",
+    "title": "好きなアーティスト",
+    "text": "好きなアーティストとかっています？",
     "star": 3,
     "tags": [
-      "深夜",
-      "日常"
+      "雑談"
     ],
-    "airSuitability": "深夜帯",
+    "airSuitability": "雑談",
     "state": "unused",
     "reappearRule": "once_per_person"
   },
   {
-    "id": "s-20",
-    "title": "ラスト1試合の嘘",
-    "text": "「次でラストにします！」って言いつつ、ついつい悔しくて伸びちゃうことありません？(笑)",
-    "star": 2,
-    "tags": [
-      "深夜",
-      "共感"
-    ],
-    "airSuitability": "疲れ気味",
-    "state": "unused",
-    "reappearRule": "everytime"
-  },
-  {
-    "id": "s-21",
-    "title": "まったりお風呂事情",
-    "text": "ゲームやりすぎて肩やバキバキな時、お風呂はシャワー派ですか？しっかり湯船浸かる派？",
-    "star": 2,
-    "tags": [
-      "日常",
-      "健康"
-    ],
-    "airSuitability": "疲れ気味",
-    "state": "unused",
-    "reappearRule": "once_per_person"
-  },
-  {
-    "id": "k-22",
-    "title": "いまのデスをスロー解説",
-    "text": "さっきの華麗なデスシーン！一体何が起きていたのかスローで教えてもらえます？(笑)",
+    "id": "z-36",
+    "title": "ロッカー",
+    "text": "ロッカーってこだわったりしてます？見てもいい？",
     "star": 3,
     "tags": [
-      "ネタ",
-      "VC"
+      "雑談"
     ],
-    "airSuitability": "盛り上がり",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "everytime"
+    "reappearRule": "once_per_person"
   },
   {
-    "id": "k-23",
-    "title": "ウルショの雄叫び",
-    "text": "ウルトラショット撃つとき、実は心の中(またはミュート中)で何か叫んでたりします？",
-    "star": 5,
+    "id": "z-37",
+    "title": "スプラ夜ふかし選手権",
+    "text": "スプラでMax何時までプレイしたことありますか？",
+    "star": 3,
     "tags": [
-      "ネタ",
-      "スプラ"
+      "雑談"
     ],
-    "airSuitability": "盛り上がり",
+    "airSuitability": "雑談",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
-    "id": "k-24",
-    "title": "隣の人を他告紹介！",
-    "text": "今ここにいるメンバーの誰か1人を指名して、その人を一言で紹介するとしたらどんな感じ？",
-    "star": 5,
+    "id": "z-38",
+    "title": "ジャイロ派？スティック派？",
+    "text": "ジャイロ派？スティック派？",
+    "star": 3,
     "tags": [
-      "VC",
+      "雑談"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "z-39",
+    "title": "サモラン派？バンカラ派？",
+    "text": "オプマとかサモラン、Xマッチとか何をプレイするのが多いですか？",
+    "star": 3,
+    "tags": [
+      "雑談"
+    ],
+    "airSuitability": "雑談",
+    "state": "unused",
+    "reappearRule": "once_per_person"
+  },
+  {
+    "id": "b-40",
+    "title": "私の◯◯、弱すぎ…！？",
+    "text": "うわっ…私の◯◯、弱すぎ…？",
+    "star": 3,
+    "tags": [
+      "自虐",
       "ネタ"
     ],
-    "airSuitability": "盛り上がり",
+    "airSuitability": "戦犯したとき",
+    "state": "unused",
+    "reappearRule": "session_graveyard"
+  },
+  {
+    "id": "r-41",
+    "title": "いったんブキ統一",
+    "text": "え、いったん皆で◯◯持ってみます？笑",
+    "star": 3,
+    "tags": [
+      "空気変え",
+      "ネタ"
+    ],
+    "airSuitability": "連敗中",
+    "state": "unused",
+    "reappearRule": "session_graveyard"
+  },
+  {
+    "id": "r-42",
+    "title": "逆に何連敗いける？",
+    "text": "逆にどこまでいけるのか！？勝ったら負けまである笑",
+    "star": 3,
+    "tags": [
+      "空気変え",
+      "ネタ"
+    ],
+    "airSuitability": "連敗中",
+    "state": "unused",
+    "reappearRule": "session_graveyard"
+  },
+  {
+    "id": "r-43",
+    "title": "負けても楽しい",
+    "text": "負けまくってるのにすみません、ナカマとやると楽しい笑",
+    "star": 3,
+    "tags": [
+      "空気変え"
+    ],
+    "airSuitability": "連敗中",
+    "state": "unused",
+    "reappearRule": "session_graveyard"
+  },
+  {
+    "id": "r-44",
+    "title": "スプリンクラーでやられた",
+    "text": "ヤバい、今ならスプリンクラーに負けるまである",
+    "star": 3,
+    "tags": [
+      "空気変え",
+      "ネタ"
+    ],
+    "airSuitability": "連敗中",
+    "state": "unused",
+    "reappearRule": "session_graveyard"
+  },
+  {
+    "id": "d-45",
+    "title": "好きなお酒",
+    "text": "よく飲むとか好きなお酒とかってありますか？",
+    "star": 3,
+    "tags": [
+      "雑談",
+      "飲酒"
+    ],
+    "airSuitability": "飲酒トゥーン",
     "state": "unused",
     "reappearRule": "once_per_person"
   },
   {
-    "id": "k-25",
-    "title": "夢のコラボ企画",
-    "text": "もしスプラが他のアニメやゲームとコラボするとしたら、何とコラボしてほしいですか？",
-    "star": 4,
-    "tags": [
-      "スプラ",
-      "ネタ"
-    ],
-    "airSuitability": "盛り上がり",
-    "state": "unused",
-    "reappearRule": "session_graveyard"
-  },
-  {
-    "id": "k-26",
-    "title": "伝説の編成事故",
-    "text": "これまでマッチングして「保存データ読み込みの不整合」とかヤバい編成事故って？",
+    "id": "d-46",
+    "title": "おすすめのお酒",
+    "text": "なにかおすすめのお酒とかってありますか？",
     "star": 3,
     "tags": [
-      "スプラ",
-      "共感"
+      "雑談",
+      "飲酒"
     ],
-    "airSuitability": "盛り上がり",
+    "airSuitability": "飲酒トゥーン",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
-    "id": "k-27",
-    "title": "もしオカシラシャケが…",
-    "text": "もし現実の街にオカシラシャケが現れたら、どのブキ担いで戦いに行きます？(笑)",
-    "star": 4,
+    "id": "d-47",
+    "title": "最近おいしかったお酒",
+    "text": "最近おいしかったお酒ってなんですか？",
+    "star": 3,
     "tags": [
-      "ネタ",
-      "スプラ"
+      "雑談",
+      "飲酒"
     ],
-    "airSuitability": "盛り上がり",
-    "state": "unused",
-    "reappearRule": "session_graveyard"
-  },
-  {
-    "id": "k-28",
-    "title": "オリジナルステージ設計",
-    "text": "自分がオリジナルの対戦ステージを作れるとしたら、どんな意地悪なギミック置きたいですか？",
-    "star": 4,
-    "tags": [
-      "ネタ",
-      "スプラ"
-    ],
-    "airSuitability": "盛り上がり",
-    "state": "unused",
-    "reappearRule": "session_graveyard"
-  },
-  {
-    "id": "k-29",
-    "title": "もしイカになれたら",
-    "text": "もし本当にイカ(タコ)になってインクの中を泳げるようになったら、最初どこ泳ぎたいですか？",
-    "star": 5,
-    "tags": [
-      "ネタ",
-      "ロマン"
-    ],
-    "airSuitability": "盛り上がり",
+    "airSuitability": "飲酒トゥーン",
     "state": "unused",
     "reappearRule": "once_per_person"
   }
@@ -401,20 +628,38 @@ export const STARTER_DECKS: Deck[] = [
       "z-13",
       "z-14",
       "z-15",
-      "s-16",
-      "s-17",
-      "s-18",
-      "s-19",
-      "s-20",
-      "s-21",
-      "k-22",
-      "k-23",
-      "k-24",
-      "k-25",
-      "k-26",
-      "k-27",
-      "k-28",
-      "k-29"
+      "m-16",
+      "m-17",
+      "u-18",
+      "m-19",
+      "r-20",
+      "r-21",
+      "b-22",
+      "h-23",
+      "h-24",
+      "h-25",
+      "h-26",
+      "z-27",
+      "z-28",
+      "z-29",
+      "z-30",
+      "z-31",
+      "z-32",
+      "z-33",
+      "z-34",
+      "z-35",
+      "z-36",
+      "z-37",
+      "z-38",
+      "z-39",
+      "b-40",
+      "r-41",
+      "r-42",
+      "r-43",
+      "r-44",
+      "d-45",
+      "d-46",
+      "d-47"
     ]
   },
   {
@@ -427,7 +672,11 @@ export const STARTER_DECKS: Deck[] = [
       "h-3",
       "h-4",
       "h-5",
-      "h-6"
+      "h-6",
+      "h-23",
+      "h-24",
+      "h-25",
+      "h-26"
     ]
   },
   {
@@ -435,7 +684,6 @@ export const STARTER_DECKS: Deck[] = [
     "name": "💬 雑談メイン",
     "description": "プレイスタイルやゲームの内外のことで自然に話が弾むカード。",
     "cardIds": [
-      "h-6",
       "z-7",
       "z-8",
       "z-9",
@@ -445,19 +693,25 @@ export const STARTER_DECKS: Deck[] = [
       "z-13",
       "z-14",
       "z-15",
-      "s-16"
-    ]
-  },
-  {
-    "id": "deck-night",
-    "name": "🌌 深夜のまったり",
-    "description": "夜更けにじっくり、お互いのことを深く知るためのカード。",
-    "cardIds": [
-      "z-9",
-      "s-16",
-      "s-17",
-      "s-19",
-      "s-20"
+      "m-16",
+      "m-17",
+      "m-19",
+      "z-27",
+      "z-28",
+      "z-29",
+      "z-30",
+      "z-31",
+      "z-32",
+      "z-33",
+      "z-34",
+      "z-35",
+      "z-36",
+      "z-37",
+      "z-38",
+      "z-39",
+      "d-45",
+      "d-46",
+      "d-47"
     ]
   },
   {
@@ -465,18 +719,58 @@ export const STARTER_DECKS: Deck[] = [
     "name": "💥 沈黙打破・ネタ",
     "description": "静かになってしまった時や、ちょっと笑いが欲しい時のカード。",
     "cardIds": [
-      "z-11",
-      "z-15",
-      "s-18",
-      "s-20",
-      "k-22",
-      "k-23",
-      "k-24",
-      "k-25",
-      "k-26",
-      "k-27",
-      "k-28",
-      "k-29"
+      "r-20",
+      "r-21",
+      "b-22",
+      "b-40",
+      "r-41",
+      "r-42",
+      "r-43",
+      "r-44"
+    ]
+  },
+  {
+    "id": "deck-meta",
+    "name": "🎮 メタ・リアル話",
+    "description": "ゲームを離れた日常やリアルな話題のカード。",
+    "cardIds": [
+      "m-16",
+      "m-17",
+      "m-19"
+    ]
+  },
+  {
+    "id": "deck-drink",
+    "name": "🍺 飲酒トゥーン",
+    "description": "お酒を飲みながら盛り上がるためのカード集。",
+    "cardIds": [
+      "z-32",
+      "d-45",
+      "d-46",
+      "d-47"
+    ]
+  },
+  {
+    "id": "deck-silent",
+    "name": "🤐 無言いじり",
+    "description": "無言になってしまった時にそっと場を動かすカード。",
+    "cardIds": [
+      "u-18"
+    ]
+  },
+  {
+    "id": "deck-loss",
+    "name": "💀 連敗・戦犯タイム",
+    "description": "連敗中や戦犯してしまった時の空気を変えるカード。",
+    "cardIds": [
+      "r-20",
+      "r-21",
+      "b-22",
+      "b-40",
+      "r-41",
+      "r-42",
+      "r-43",
+      "r-44"
     ]
   }
 ];
