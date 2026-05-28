@@ -297,12 +297,12 @@ export const Card: React.FC<CardProps> = ({
       animate={
         isExiting
           ? { opacity: 0, scale: 0.8 }
-          : { opacity: 1, scale: isActive ? 1 : 0.85 }
+          : { opacity: 1 }
       }
       transition={
         isExiting
           ? { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }
-          : { type: 'spring', stiffness: 300, damping: 25 }
+          : { duration: 0.25, ease: "easeOut" }
       }
       // opacity/scale/transition-allをclassNameから削除→Framer Motionが唯一の制御元
       className={`relative w-80 h-112 cursor-pointer perspective-1000 group select-none touch-none outline-none focus:outline-none ${

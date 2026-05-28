@@ -275,14 +275,14 @@ export const CardDeck: React.FC<CardDeckProps> = ({
           </button>
         )}
 
-        {/* カルーセル配置エリア */}
-        <div className="flex items-center justify-center space-x-[-80px] w-full max-w-5xl">
+        {/* カルーセル配置エリア (重なりを-80pxから-30pxへ緩めて距離を離し、視認性を劇的に向上) */}
+        <div className="flex items-center justify-center space-x-[-30px] w-full max-w-5xl">
           <AnimatePresence mode="sync">
             {displayCards.map((card, index) => {
               const isActive = index === activeCardIndex;
               const isFlipped = alwaysOpen ? true : !!flippedStates[card.id];
 
-              // 3枚以上の場合のフォーカス効果（Framer Motionで滑らかに表現するために値を定義）
+              // 3枚以上の場合のフォーカス効果（重なり緩和に伴い targetX も極上調律）
               let zIndex = 0;
               let targetX = 0;
               let targetY = 0;
@@ -296,14 +296,14 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                 targetRotate = 0;
               } else if (index < activeCardIndex) {
                 zIndex = 10 - (activeCardIndex - index);
-                targetX = -32; // -translate-x-8
-                targetY = -4;  // -translate-y-1
-                targetRotate = -0.5;
+                targetX = -20; // 重なり space-x-[-30px] に合わせて広がりを調律
+                targetY = -2;  
+                targetRotate = -0.3;
               } else {
                 zIndex = 10 - (index - activeCardIndex);
-                targetX = 32;  // translate-x-8
-                targetY = -4;  // -translate-y-1
-                targetRotate = 0.5;
+                targetX = 20;  // 重なり space-x-[-30px] に合わせて広がりを調律
+                targetY = -2;  
+                targetRotate = 0.3;
               }
 
               return (
@@ -312,8 +312,8 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   layout
                   initial={{ 
                     opacity: 0, 
-                    scale: 0.95, 
-                    y: 20,
+                    scale: 0.96, 
+                    y: 10,
                     x: targetX,
                     rotate: targetRotate
                   }}
@@ -325,10 +325,9 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                     rotate: targetRotate
                   }}
                   transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 26,
-                    layout: { duration: 0.25 }
+                    duration: 0.32,
+                    ease: [0.25, 0.8, 0.25, 1], // スプリングによる微細な震え（カクつき）を排除し、高級イージングに統一
+                    layout: { duration: 0.28, ease: [0.25, 0.8, 0.25, 1] }
                   }}
                   exit={
                     getExitType(card.id) === 'touch'
