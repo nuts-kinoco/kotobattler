@@ -345,9 +345,15 @@ export const Card: React.FC<CardProps> = ({
       onTouchEnd={handleTouchEnd}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
-      onTap={() => {
+      onTap={(e) => {
         // ドラッグ履歴があるまたはドラッグ中の場合はタップ無効
         if (hasDraggedRef.current || isDraggingRef.current) return;
+
+        // タップされた要素が星評価エリア（またはその中の星マーク）である場合は、カードのフリップ（裏返り）をバイパスします
+        const target = e.target as HTMLElement;
+        if (target && (target.closest('.rating-container') || ratingContainerRef.current?.contains(target))) {
+          return;
+        }
 
         if (isActive) {
           onToggleFlip();
@@ -511,6 +517,11 @@ export const Card: React.FC<CardProps> = ({
                       handleRatingStart(e.touches[0].clientX);
                     }
                   }}
+                  onClick={(e) => {
+                    // 星ゲージ上でのクリックイベントそのものを親カードへ伝播（バブリング）させずにその場で消滅させます
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
                   onMouseMove={(e) => {
                     if (isActive && !isRatingDragging) {
                       const currentRating = calculateRating(e.clientX);
@@ -522,7 +533,7 @@ export const Card: React.FC<CardProps> = ({
                       setHoverRating(null);
                     }
                   }}
-                  className={`flex items-center space-x-1 py-1.5 px-2.5 rounded-xl bg-foreground/5 border border-transparent transition-all select-none ${
+                  className={`rating-container flex items-center space-x-1 py-1.5 px-2.5 rounded-xl bg-foreground/5 border border-transparent transition-all select-none ${
                     isActive ? 'hover:bg-foreground/10 hover:border-foreground/10 cursor-ew-resize active:scale-102' : 'cursor-default'
                   }`}
                   title={isActive ? '星評価をドラッグやタップで調整できます' : undefined}
