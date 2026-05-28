@@ -275,60 +275,60 @@ export const CardDeck: React.FC<CardDeckProps> = ({
           </button>
         )}
 
-        {/* カルーセル配置エリア (重なりを完全に排除し、美しいスキマを空けて等間隔に配置) */}
-        <div className="flex items-center justify-center space-x-6 w-full max-w-5xl">
+        {/* カルーセル配置エリア (重なりを廃止し、カード同士に20pxの上品な隙間を空けて配置) */}
+        <div className="flex items-center justify-center space-x-[20px] w-full max-w-5xl">
           <AnimatePresence mode="sync">
             {displayCards.map((card, index) => {
-               const isActive = index === activeCardIndex;
-               const isFlipped = alwaysOpen ? true : !!flippedStates[card.id];
- 
-               // 3枚以上の場合のフォーカス効果（重なり完全排除に伴い等間隔配置し、中央カードを優雅に浮かせる）
-               let zIndex = 0;
-               let targetX = 0;
-               let targetY = 0;
-               let targetRotate = 0;
-               let targetScale = isActive ? 1 : 0.92; // 非アクティブは少し小さくして中央を引き立てる
-               
-               if (isActive) {
-                 zIndex = 20;
-                 targetX = 0;
-                 targetY = 0;
-                 targetRotate = 0;
-               } else if (index < activeCardIndex) {
-                 zIndex = 10 - (activeCardIndex - index);
-                 targetX = 0; // 重なりがなくなったためX方向の強制的な押し出しは不要！
-                 targetY = 16; // 非アクティブは少し下げて中央を浮かび上がらせる
-                 targetRotate = -1.5; // わずかに外側に傾けて紙のようなリアルで上品な風合いを演出
-               } else {
-                 zIndex = 10 - (index - activeCardIndex);
-                 targetX = 0;
-                 targetY = 16;
-                 targetRotate = 1.5;
-               }
- 
-               return (
-                 <motion.div
-                   key={card.id}
-                   layout
-                   initial={{ 
-                     opacity: 0, 
-                     scale: 0.92, 
-                     y: 20,
-                     x: targetX,
-                     rotate: targetRotate
-                   }}
-                   animate={{ 
-                     opacity: 1, 
-                     scale: targetScale,
-                     x: targetX,
-                     y: targetY,
-                     rotate: targetRotate
-                   }}
-                   transition={{
-                     duration: 0.32,
-                     ease: [0.25, 0.8, 0.25, 1], // 高級イージングに統一
-                     layout: { duration: 0.28, ease: [0.25, 0.8, 0.25, 1] }
-                   }}
+              const isActive = index === activeCardIndex;
+              const isFlipped = alwaysOpen ? true : !!flippedStates[card.id];
+
+              // 3枚以上の場合のフォーカス効果（拡大率は維持しつつ、隙間空きに合わせて立体的に調律）
+              let zIndex = 0;
+              let targetX = 0;
+              let targetY = 0;
+              let targetRotate = 0;
+              let targetScale = isActive ? 1 : 0.95;
+              
+              if (isActive) {
+                zIndex = 20;
+                targetX = 0;
+                targetY = 0;
+                targetRotate = 0;
+              } else if (index < activeCardIndex) {
+                zIndex = 10 - (activeCardIndex - index);
+                targetX = 0;   // カルーセルの横配置はCSSの隙間に委ねる
+                targetY = 6;   // 非アクティブを少し下げて、中央カードの浮き上がり感を強調
+                targetRotate = -0.5;
+              } else {
+                zIndex = 10 - (index - activeCardIndex);
+                targetX = 0;
+                targetY = 6;
+                targetRotate = 0.5;
+              }
+
+              return (
+                <motion.div
+                  key={card.id}
+                  layout
+                  initial={{ 
+                    opacity: 0, 
+                    scale: 0.96, 
+                    y: 10,
+                    x: targetX,
+                    rotate: targetRotate
+                  }}
+                  animate={{ 
+                    opacity: 1, 
+                    scale: targetScale,
+                    x: targetX,
+                    y: targetY,
+                    rotate: targetRotate
+                  }}
+                  transition={{
+                    duration: 0.32,
+                    ease: [0.25, 0.8, 0.25, 1], // スプリングによる微細な震え（カクつき）を排除し、高級イージングに統一
+                    layout: { duration: 0.28, ease: [0.25, 0.8, 0.25, 1] }
+                  }}
                   exit={
                     getExitType(card.id) === 'touch'
                       // 使用済みexit: Card.tsx が既にアニメーション済みなので即時消去
