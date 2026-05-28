@@ -24,6 +24,7 @@ interface CardDeckProps {
   exitingAsUsedIds?: React.MutableRefObject<Map<string, 'touch' | 'button'>>;
   alwaysOpen?: boolean;
   animatingUsedCardId?: string | null;
+  onRateCard?: (cardId: string, rating: number) => void;
 }
 
 export const CardDeck: React.FC<CardDeckProps> = ({
@@ -42,7 +43,8 @@ export const CardDeck: React.FC<CardDeckProps> = ({
   onClearAirFilters,
   exitingAsUsedIds: exitingAsUsedIdsProp,
   alwaysOpen = false,
-  animatingUsedCardId = null
+  animatingUsedCardId = null,
+  onRateCard
 }) => {
   const isCompact = displaySize === 'small' || displaySize === 'medium';
 
@@ -194,6 +196,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   onPrev={handlePrev}
                   onNext={handleNext}
                   isExiting={animatingUsedCardId === card.id}
+                  onRate={(rating) => onRateCard && onRateCard(card.id, rating)}
                 />
               </motion.div>
             );
@@ -251,6 +254,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   onPrev={handlePrev}
                   onNext={handleNext}
                   isExiting={animatingUsedCardId === card.id}
+                  onRate={(rating) => onRateCard && onRateCard(card.id, rating)}
                 />
               </motion.div>
             );
@@ -354,6 +358,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                     onPrev={handlePrev}
                     onNext={handleNext}
                     isExiting={animatingUsedCardId === card.id}
+                    onRate={(rating) => onRateCard && onRateCard(card.id, rating)}
                   />
                 </motion.div>
               );

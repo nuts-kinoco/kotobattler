@@ -431,6 +431,7 @@ export default function Home() {
               exitingAsUsedIds={exitingAsUsedIds}
               alwaysOpen={state.alwaysOpen}
               animatingUsedCardId={animatingUsedCardId}
+              onRateCard={state.rateCard}
             />
           </main>
 

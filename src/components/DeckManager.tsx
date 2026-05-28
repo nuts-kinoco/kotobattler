@@ -362,6 +362,37 @@ export const DeckManager: React.FC<DeckManagerProps> = ({
                               {c.airSuitability}
                             </span>
                           )}
+                          <div className="flex items-center space-x-0.5 ml-2">
+                            {Array.from({ length: 5 }).map((_, idx) => {
+                              const starValue = idx + 1;
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateCard({
+                                      ...c,
+                                      star: starValue
+                                    });
+                                    if (showToast) {
+                                      showToast(`評価を星 ${starValue} に更新しました！🦑`);
+                                    }
+                                  }}
+                                  className="p-0.5 rounded hover:bg-foreground/5 transition-all transform hover:scale-110 active:scale-95 cursor-pointer"
+                                  title={`このカードを星 ${starValue} に評価します`}
+                                >
+                                  <Star
+                                    className={`w-3.5 h-3.5 transition-all duration-150 ${
+                                      idx < c.star 
+                                        ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_2px_rgba(245,158,11,0.4)]' 
+                                        : 'text-gray-600/40 dark:text-gray-600 hover:text-amber-400/60'
+                                    }`}
+                                  />
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                         <p className="text-sm font-bold text-foreground/90 leading-relaxed font-sans select-text">
                           {c.text}

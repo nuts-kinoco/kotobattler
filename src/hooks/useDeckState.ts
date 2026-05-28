@@ -655,6 +655,13 @@ export const useDeckState = () => {
     saveCards(newCards);
   };
 
+  const rateCard = useCallback((cardId: string, rating: number) => {
+    const newCards = cards.map(c => 
+      c.id === cardId ? { ...c, star: rating } : c
+    );
+    saveCards(newCards);
+  }, [cards]);
+
   // ==========================================
   // 11. バックアップ＆インポート (backupServiceへの委譲)
   // ==========================================
@@ -860,6 +867,7 @@ export const useDeckState = () => {
     updateCard,
     deleteCard,
     toggleCardSealed,
+    rateCard,
     
     // インポート・エクスポート (CSV & JSON)
     importCSV,

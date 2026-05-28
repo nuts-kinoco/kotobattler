@@ -17,6 +17,7 @@ interface CardProps {
   onPrev?: () => void;
   onNext?: () => void;
   isExiting?: boolean;
+  onRate?: (rating: number) => void;
 }
 
 // お題の空気感（AirSuitability）に基づいたダイナミックなカラースキーム定義
@@ -84,7 +85,8 @@ export const Card: React.FC<CardProps> = ({
   onSkip,
   onPrev,
   onNext,
-  isExiting: isExitingProp = false
+  isExiting: isExitingProp = false,
+  onRate
 }) => {
   const styles = getAirSuitabilityStyles(card.airSuitability);
   const isTouch = opMode === 'touch';
@@ -136,14 +138,34 @@ export const Card: React.FC<CardProps> = ({
   }, [card.id]);
 
   const renderStars = (count: number) => {
-    return Array.from({ length: 5 }).map((_, i) => (
-      <Star
-        key={i}
-        className={`w-4 h-4 ${
-          i < count ? 'text-amber-400 fill-amber-400' : 'text-gray-600/40 dark:text-gray-600'
-        }`}
-      />
-    ));
+    return Array.from({ length: 5 }).map((_, i) => {
+      const starValue = i + 1;
+      return (
+        <button
+          key={i}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isActive && onRate) {
+              onRate(starValue);
+            }
+          }}
+          className={`p-0.5 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-neon-purple transition-all duration-200 transform ${
+            isActive ? 'hover:scale-125 cursor-pointer active:scale-95' : 'cursor-default'
+          }`}
+          title={isActive ? `このカードを星 ${starValue} に評価します` : undefined}
+          disabled={!isActive}
+        >
+          <Star
+            className={`w-4 h-4 transition-all duration-200 ${
+              i < count 
+                ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_2px_rgba(245,158,11,0.5)]' 
+                : 'text-gray-600/40 dark:text-gray-600 hover:text-amber-400/60'
+            }`}
+          />
+        </button>
+      );
+    });
   };
 
   // ── タッチ開始 ──
