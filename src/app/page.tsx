@@ -125,6 +125,12 @@ export default function Home() {
     state.skipCard(cardId);
   }, [state]);
 
+  // 山札リセットとシャッフル通知のラッパー
+  const handleResetUsedCards = useCallback(() => {
+    state.resetUsedCards();
+    showToast('山札を戻して、カードをシャッフルしました！🦑🔁');
+  }, [state, showToast]);
+
   // キーボードショートカットのバインド
   useShortcuts({
     enabled: state.shortcutEnabled && appMode === 'main',
@@ -392,7 +398,7 @@ export default function Home() {
               flippedStates={flippedStates}
               onToggleFlip={handleToggleFlip}
               displaySize={state.displaySize}
-              onResetUsedCards={state.resetUsedCards}
+              onResetUsedCards={handleResetUsedCards}
               opMode={state.activeOpMode}
               onUseCard={handleUseCardWrapper}
               onSkipCard={handleSkipCardWrapper}

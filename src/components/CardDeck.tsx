@@ -66,22 +66,22 @@ export const CardDeck: React.FC<CardDeckProps> = ({
           
           <div className="space-y-1.5">
             <h3 className="font-black text-base sm:text-lg text-neon-green tracking-wider uppercase">
-              Mission Accomplished!
+              Wipeout！
             </h3>
             <p className="text-sm font-bold text-foreground/90">
-              すべてのカードを使い切りました！
+              すべてのカードを使い切りました。イカす！
             </p>
             <p className="text-[11px] text-foreground/50 leading-relaxed max-w-xs px-2">
-              お見事です！お題カードをすべて話し尽くしました。山札を戻して、もう一度楽しい会話を続けましょう！✨
+              山札を戻して、カードをシャッフルします。
             </p>
           </div>
 
           {onResetUsedCards && (
             <button
               onClick={onResetUsedCards}
-              className="mt-2 px-5 py-3 rounded-2xl bg-neon-green hover:bg-emerald-400 text-background dark:text-slate-950 text-xs font-black tracking-wider transition-all duration-300 shadow-lg hover:shadow-neon-green/20 hover:scale-105 active:scale-95 flex items-center gap-2 border border-neon-green/35"
+              className="mt-2 px-5 py-3 rounded-2xl bg-neon-green hover:bg-emerald-400 text-background dark:text-slate-950 text-xs font-black tracking-wider transition-all duration-300 shadow-lg hover:shadow-neon-green/20 hover:scale-105 active:scale-95 flex items-center gap-2 border border-neon-green/35 cursor-pointer"
             >
-              <span className="text-sm">🔄</span> 山札を戻してもう一度話す
+              <span className="text-sm">🔄</span> 山札を戻してシャッフル！
             </button>
           )}
         </div>
