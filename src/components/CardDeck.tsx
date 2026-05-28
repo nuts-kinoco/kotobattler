@@ -140,6 +140,8 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   opMode={opMode}
                   onUse={() => onUseCard && onUseCard(card.id)}
                   onSkip={() => onSkipCard && onSkipCard(card.id)}
+                  onPrev={handlePrev}
+                  onNext={handleNext}
                 />
               </motion.div>
             );
@@ -194,6 +196,8 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   opMode={opMode}
                   onUse={() => onUseCard && onUseCard(card.id)}
                   onSkip={() => onSkipCard && onSkipCard(card.id)}
+                  onPrev={handlePrev}
+                  onNext={handleNext}
                 />
               </motion.div>
             );
@@ -276,6 +280,8 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                     opMode={opMode}
                     onUse={() => onUseCard && onUseCard(card.id)}
                     onSkip={() => onSkipCard && onSkipCard(card.id)}
+                    onPrev={handlePrev}
+                    onNext={handleNext}
                   />
                 </motion.div>
               );

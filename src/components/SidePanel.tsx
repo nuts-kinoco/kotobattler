@@ -722,16 +722,18 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             </div>
 
             {/* 表示枚数設定 (Largeモード時のみ有効) */}
-            {displaySize === 'large' && (
+            {(displaySize === 'large' || displaySize === 'small') && (
               <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-3">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-foreground/80">表示カード枚数 (Large専用)</label>
+                  <label className="text-xs font-bold text-foreground/80">
+                    {displaySize === 'small' ? '表示カード枚数 (スマホ最大3枚)' : '表示カード枚数'}
+                  </label>
                   <span className="text-sm font-black text-neon-green">{cardDisplayCount}枚</span>
                 </div>
                 <input
                   type="range"
                   min="1"
-                  max="5"
+                  max={displaySize === 'small' ? 3 : 5}
                   step="1"
                   value={cardDisplayCount}
                   onChange={(e) => setCardDisplayCount(Number(e.target.value))}
@@ -739,7 +741,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 />
                 <div className="flex justify-between text-[9px] text-foreground/30 font-mono">
                   <span>1枚</span>
-                  <span>5枚</span>
+                  <span>{displaySize === 'small' ? '3枚' : '5枚'}</span>
                 </div>
               </div>
             )}

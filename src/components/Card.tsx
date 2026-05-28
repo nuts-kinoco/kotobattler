@@ -14,6 +14,8 @@ interface CardProps {
   opMode?: 'desktop' | 'touch';
   onUse?: () => void;
   onSkip?: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
 }
 
 // お題の空気感（AirSuitability）に基づいたダイナミックなカラースキーム定義
@@ -78,7 +80,9 @@ export const Card: React.FC<CardProps> = ({
   onClick,
   opMode = 'desktop',
   onUse,
-  onSkip
+  onSkip,
+  onPrev,
+  onNext
 }) => {
   const styles = getAirSuitabilityStyles(card.airSuitability);
 
@@ -103,9 +107,53 @@ export const Card: React.FC<CardProps> = ({
   const useOpacity = isDragging && dragOffset.y < 0 ? Math.min(1, Math.max(0, -dragOffset.y / 100)) : 0;
   const skipOpacity = isDragging && dragOffset.x > 0 ? Math.min(1, Math.max(0, dragOffset.x / 100)) : 0;
 
+  // ドラッグ中に一定以上の距離を動かしたかどうかの履歴フラグ
+  const hasDraggedRef = React.useRef(false);
+
+  const handleDragStart = () => {
+    setIsDragging(true);
+    hasDraggedRef.current = false;
+  };
+
+  const handleDrag = (_: any, info: any) => {
+    setDragOffset({ x: info.offset.x, y: info.offset.y });
+    // わずかでもドラッグ移動（15px以上）があった履歴があれば、タップ判定を無効化
+    if (Math.abs(info.offset.x) > 15 || Math.abs(info.offset.y) > 15) {
+      hasDraggedRef.current = true;
+    }
+  };
+
+  const handleDragEnd = (_: any, info: any) => {
+    setIsDragging(false);
+    setDragOffset({ x: 0, y: 0 });
+
+    const threshold = 100; // フリック感度を良くするため100pxに調律
+    if (info.offset.y < -threshold && onUse) {
+      // 上スワイプ: 使用済み
+      onUse();
+    } else if (info.offset.x > threshold && onNext) {
+      // 右スワイプ: 次のカード
+      onNext();
+    } else if (info.offset.x < -threshold && onPrev) {
+      // 左スワイプ: 前のカード
+      onPrev();
+    }
+
+    // 指を離した瞬間に hasDragged が即時クリアされると、Framer MotionのonTapが
+    // 直後に誤トリガーされることがあるため、100msのディレイでクリアします
+    setTimeout(() => {
+      hasDraggedRef.current = false;
+    }, 100);
+  };
+
   return (
     <motion.div
       onTap={() => {
+        // ドラッグされた履歴がある、または現在ドラッグ中の場合は、絶対にめくらない！
+        if (hasDraggedRef.current || isDragging) {
+          return;
+        }
+        
         if (isActive) {
           onToggleFlip();
         } else {
@@ -116,21 +164,9 @@ export const Card: React.FC<CardProps> = ({
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.65}
       dragTransition={{ bounceStiffness: 600, bounceDamping: 30 }}
-      onDragStart={() => setIsDragging(true)}
-      onDrag={(_, info) => {
-        setDragOffset({ x: info.offset.x, y: info.offset.y });
-      }}
-      onDragEnd={(_, info) => {
-        setIsDragging(false);
-        setDragOffset({ x: 0, y: 0 });
-
-        // ドラッグ距離のしきい値判定 (真上に大きく弾いてUsed、右に大きく弾いてSkip)
-        if (info.offset.y < -120 && onUse) {
-          onUse();
-        } else if (info.offset.x > 120 && onSkip) {
-          onSkip();
-        }
-      }}
+      onDragStart={handleDragStart}
+      onDrag={handleDrag}
+      onDragEnd={handleDragEnd}
       className={`relative w-80 h-112 cursor-pointer perspective-1000 group ${
         isActive ? 'scale-100 z-10' : 'scale-85 opacity-35 hover:opacity-50 z-0'
       } transition-all duration-300`}
