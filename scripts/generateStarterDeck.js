@@ -45,6 +45,7 @@ const textIdx = header.indexOf('text');
 const starIdx = header.indexOf('star');
 const tagsIdx = header.indexOf('tags');
 const airIdx = header.indexOf('air');
+const ruleIdx = header.indexOf('rule');
 
 const cards = [];
 
@@ -57,6 +58,15 @@ for (let i = 1; i < lines.length; i++) {
   const star = starIdx !== -1 && row[starIdx] ? parseInt(row[starIdx]) : 3;
   const tags = tagsIdx !== -1 && row[tagsIdx] ? row[tagsIdx].split(';').map(t => t.trim()).filter(Boolean) : [];
   const airSuitability = airIdx !== -1 && row[airIdx] ? row[airIdx].trim() : '普通';
+  
+  // CSVの「rule」カラムから再出現ルール（人物墓地設定など）を読み込む
+  let reappearRule = 'session_graveyard';
+  if (ruleIdx !== -1 && row[ruleIdx]) {
+    const r = row[ruleIdx].trim();
+    if (['everytime', 'session_graveyard', 'once_per_person', 'cooldown'].includes(r)) {
+      reappearRule = r;
+    }
+  }
 
   // 固有IDを割り当て
   const prefix = airSuitability === 'はじめまして' ? 'h' : 
@@ -73,9 +83,7 @@ for (let i = 1; i < lines.length; i++) {
     tags,
     airSuitability,
     state: 'unused',
-    reappearRule: (tags.includes('初対面') || tags.includes('自己紹介') || star === 5)
-      ? 'once_per_person'
-      : 'session_graveyard'
+    reappearRule
   });
 }
 

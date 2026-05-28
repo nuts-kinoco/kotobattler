@@ -25,7 +25,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "はじめまして",
     "state": "unused",
-    "reappearRule": "once_per_person"
+    "reappearRule": "everytime"
   },
   {
     "id": "h-3",
@@ -51,7 +51,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "はじめまして",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "h-5",
@@ -64,7 +64,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "はじめまして",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "h-6",
@@ -90,7 +90,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "普通",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "everytime"
   },
   {
     "id": "z-8",
@@ -116,11 +116,11 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "普通",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "everytime"
   },
   {
     "id": "z-10",
-    "title": "ステージの得意不得意",
+    "title": "ステージの得意得意",
     "text": "いまのローテーションのステージ、得意な方ですか？それとも鬼門ですか？(笑)",
     "star": 1,
     "tags": [
@@ -173,7 +173,7 @@ export const STARTER_CARDS: Card[] = [
   {
     "id": "z-14",
     "title": "バンカラ派？バイト派？",
-    "text": "普段はバンカラマッチ(ナワバリ)派ですか？それともサーモンランばっかりやる派ですか？",
+    "text": "普段はバンカラマッチ(ナワバリ)派ですか製？それともサーモンランばっかりやる派ですか？",
     "star": 2,
     "tags": [
       "スプラ",
@@ -207,7 +207,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "深夜帯",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "s-17",
@@ -220,7 +220,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "深夜帯",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "everytime"
   },
   {
     "id": "s-18",
@@ -246,7 +246,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "深夜帯",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "s-20",
@@ -259,7 +259,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "疲れ気味",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "everytime"
   },
   {
     "id": "s-21",
@@ -272,7 +272,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "疲れ気味",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "once_per_person"
   },
   {
     "id": "k-22",
@@ -285,7 +285,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "盛り上がり",
     "state": "unused",
-    "reappearRule": "session_graveyard"
+    "reappearRule": "everytime"
   },
   {
     "id": "k-23",
@@ -298,7 +298,7 @@ export const STARTER_CARDS: Card[] = [
     ],
     "airSuitability": "盛り上がり",
     "state": "unused",
-    "reappearRule": "once_per_person"
+    "reappearRule": "session_graveyard"
   },
   {
     "id": "k-24",
@@ -329,7 +329,7 @@ export const STARTER_CARDS: Card[] = [
   {
     "id": "k-26",
     "title": "伝説の編成事故",
-    "text": "これまでマッチングして「これはマジで終わった…！」って思ったヤバい編成事故って？",
+    "text": "これまでマッチングして「保存データ読み込みの不整合」とかヤバい編成事故って？",
     "star": 3,
     "tags": [
       "スプラ",
