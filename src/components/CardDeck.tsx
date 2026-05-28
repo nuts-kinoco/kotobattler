@@ -39,6 +39,12 @@ export const CardDeck: React.FC<CardDeckProps> = ({
 }) => {
   const isCompact = displaySize === 'small' || displaySize === 'medium';
 
+  // ── 使用済みexit追跡 ──────────────────────────────────────────────────────
+  // AnimatePresence の exit 時に card.state を参照すると React 18 のバッチ処理により
+  // 「古い state（unused）」が渡されてしまい exit 方向が横（x:500）になる問題を防ぐ。
+  // onUse が呼ばれた瞬間に cardId を記録し、exit 判定に使用する。
+  const exitingAsUsedIds = React.useRef<Set<string>>(new Set());
+
   // アプリに表示する対象 of カードオブジェクトを順番に取得
   const displayCards = activeCardIds
     .map(id => cards.find(c => c.id === id))
@@ -52,6 +58,17 @@ export const CardDeck: React.FC<CardDeckProps> = ({
   const handleNext = () => {
     if (displayCards.length === 0) return;
     setActiveCardIndex(prev => (prev < displayCards.length - 1 ? prev + 1 : 0));
+  };
+
+  // 使用済みexit判定ヘルパー
+  const isExitingAsUsed = (cardId: string) => exitingAsUsedIds.current.has(cardId);
+
+  // onUse ラッパー：cardId を使用済みとして記録してから親のコールバックを呼ぶ
+  const handleUseCard = (cardId: string) => {
+    exitingAsUsedIds.current.add(cardId);
+    // exit 完了後にクリーンアップ（メモリリーク防止）
+    setTimeout(() => exitingAsUsedIds.current.delete(cardId), 2000);
+    onUseCard && onUseCard(cardId);
   };
 
   if (displayCards.length === 0) {
@@ -145,13 +162,13 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   y: isActive ? -5 : 5,
                   transition: { duration: 0.25 }
                 }}
-                exit={{
-                  opacity: 0,
-                  y: card.state === 'used' ? -800 : 0,
-                  x: card.state === 'used' ? 0 : 500,
-                  scale: 0.85,
-                  transition: { duration: 0.35 }
-                }}
+                exit={
+                  isExitingAsUsed(card.id)
+                    // 使用済みexit: Card.tsx が既にアニメーション済みなので即時消去
+                    ? { opacity: 0, transition: { duration: 0 } }
+                    // パスexit: 横にスライドアウト
+                    : { opacity: 0, x: 500, scale: 0.85, transition: { duration: 0.35 } }
+                }
                 style={{ zIndex }}
                 className="transition-all duration-300 shrink-0"
               >
@@ -162,7 +179,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   isActive={isActive}
                   onClick={() => setActiveCardIndex(index)}
                   opMode={opMode}
-                  onUse={() => onUseCard && onUseCard(card.id)}
+                  onUse={() => handleUseCard(card.id)}
                   onSkip={() => onSkipCard && onSkipCard(card.id)}
                   onPrev={handlePrev}
                   onNext={handleNext}
@@ -202,13 +219,11 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                     ease: "easeOut"
                   }
                 }}
-                exit={{
-                  opacity: 0,
-                  y: card.state === 'used' ? -800 : 0,
-                  x: card.state === 'used' ? 0 : 500,
-                  scale: 0.85,
-                  transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] }
-                }}
+                exit={
+                  isExitingAsUsed(card.id)
+                    ? { opacity: 0, transition: { duration: 0 } }
+                    : { opacity: 0, x: 500, scale: 0.85, transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] } }
+                }
                 className="transition-all duration-300 shrink-0"
               >
                 <Card
@@ -218,7 +233,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   isActive={isActive}
                   onClick={() => setActiveCardIndex(index)}
                   opMode={opMode}
-                  onUse={() => onUseCard && onUseCard(card.id)}
+                  onUse={() => handleUseCard(card.id)}
                   onSkip={() => onSkipCard && onSkipCard(card.id)}
                   onPrev={handlePrev}
                   onNext={handleNext}
@@ -285,13 +300,13 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                       ease: "easeOut"
                     }
                   }}
-                  exit={{
-                    opacity: 0,
-                    y: card.state === 'used' ? -800 : 0, // 話したなら真上、パスなら右へ
-                    x: card.state === 'used' ? 0 : 500,    // パスなら右へスライド
-                    scale: 0.85,
-                    transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] }
-                  }}
+                  exit={
+                    isExitingAsUsed(card.id)
+                      // 使用済みexit: Card.tsx が既にアニメーション済みなので即時消去
+                      ? { opacity: 0, transition: { duration: 0 } }
+                      // パスexit: 横にスライドアウト
+                      : { opacity: 0, x: 500, scale: 0.85, transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] } }
+                  }
                   className={`transition-all duration-500 ease-out transform ${transformClass}`}
                   style={{ zIndex }}
                 >
@@ -302,7 +317,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                     isActive={isActive}
                     onClick={() => setActiveCardIndex(index)}
                     opMode={opMode}
-                    onUse={() => onUseCard && onUseCard(card.id)}
+                    onUse={() => handleUseCard(card.id)}
                     onSkip={() => onSkipCard && onSkipCard(card.id)}
                     onPrev={handlePrev}
                     onNext={handleNext}
