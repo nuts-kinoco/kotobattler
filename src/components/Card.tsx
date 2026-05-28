@@ -86,9 +86,17 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const styles = getAirSuitabilityStyles(card.airSuitability);
 
-  // ドラッグ状態
+  // ドラッグ状態 & 画面外への離脱(Leaving)状態の管理
   const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = React.useState(false);
+  const [isLeaving, setIsLeaving] = React.useState(false);
+
+  // カードが切り替わった（マウント・更新）瞬間にすべてのドラッグ・離脱フラグをクリーンに初期化
+  React.useEffect(() => {
+    setIsLeaving(false);
+    setDragOffset({ x: 0, y: 0 });
+    setIsDragging(false);
+  }, [card.id]);
 
   const renderStars = (count: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
@@ -125,19 +133,28 @@ export const Card: React.FC<CardProps> = ({
 
   const handleDragEnd = (_: any, info: any) => {
     setIsDragging(false);
-    setDragOffset({ x: 0, y: 0 });
 
     const threshold = 100; // フリック感度を良くするため100pxに調律
+    
     if (info.offset.y < -threshold && onUse) {
-      // 上スワイプ: 使用済み
+      // 上スワイプ: 使用済み (iPhoneタスクキル)
+      setIsLeaving(true);
       onUse();
+      return; // 0,0に戻すのをスキップし、そのまま上に飛び去らせる
     } else if (info.offset.x > threshold && onNext) {
-      // 右スワイプ: 次のカード
+      // 右スワイプ: 次のカード (パス)
+      setIsLeaving(true);
       onNext();
+      return; // 0,0に戻すのをスキップ
     } else if (info.offset.x < -threshold && onPrev) {
       // 左スワイプ: 前のカード
+      setIsLeaving(true);
       onPrev();
+      return; // 0,0に戻すのをスキップ
     }
+
+    // どの閾値も超えなかった場合のみ、元の位置(中央)へ滑らかに戻す
+    setDragOffset({ x: 0, y: 0 });
 
     // 指を離した瞬間に hasDragged が即時クリアされると、Framer MotionのonTapが
     // 直後に誤トリガーされることがあるため、100msのディレイでクリアします
@@ -164,7 +181,7 @@ export const Card: React.FC<CardProps> = ({
       onTouchEnd={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
-      drag={isActive && isTouch}
+      drag={isActive && isTouch && !isLeaving}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.65}
       dragTransition={{ bounceStiffness: 600, bounceDamping: 30 }}
@@ -178,8 +195,8 @@ export const Card: React.FC<CardProps> = ({
         touchAction: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        // ドラッグ時のリアルタイムな傾き
-        rotate: isTouch && isActive ? dragOffset.x / 18 : 0,
+        // ドラッグ時のリアルタイムな傾き（離脱中は最後の傾きを滑らかに維持するか、退場演出に同期）
+        rotate: isTouch && isActive && !isLeaving ? dragOffset.x / 18 : 0,
       }}
     >
       {/* === 極小スワイプガイドインジケーター === */}

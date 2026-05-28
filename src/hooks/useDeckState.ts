@@ -413,7 +413,7 @@ export const useDeckState = () => {
     setTimeout(() => {
       const remainingActiveIds = activeCardIds.filter(id => id !== cardId);
       drawCards(cardDisplayCount, remainingActiveIds);
-    }, 60);
+    }, 180);
 
   }, [cards, persons, session, activeCardIds, cardDisplayCount, drawCards]);
 
