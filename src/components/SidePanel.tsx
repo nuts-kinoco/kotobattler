@@ -796,7 +796,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                       <span className="px-2 py-0.5 rounded bg-background border border-foreground/10 text-neon-purple font-mono font-bold text-[10px]">背景ダブルタップ</span>
                     </div>
                     <div className="text-[10px] text-slate-800 dark:text-neon-purple bg-slate-100 dark:bg-neon-purple/5 border border-slate-200 dark:border-neon-purple/20 rounded-lg p-2.5 leading-relaxed mt-2 shadow-sm dark:shadow-none font-semibold">
-                      Touch（フリック）操作モードは、スマートフォンやiPadなどのタブレット、2in1タッチPCで極めて快適に動作しますわ。
+                      Touch（フリック）操作モードは、スマートフォンやiPadなどのタブレット、2in1タッチPCで極めて快適に動作します。
                     </div>
                   </div>
                 ) : (
@@ -832,13 +832,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 ⚠️ ローカルデータに関する重要なお願い
               </label>
               <p className="text-[10px] text-foreground/80 dark:text-foreground/75 leading-relaxed font-medium">
-                本アプリはプライバシー保護のため、すべてのデータがブラウザのローカル（LocalStorage）のみに安全に保存されますわ。
+                本アプリはプライバシー保護のため、すべてのデータがブラウザのローカル（LocalStorage）のみに安全に保存されます。
               </p>
               <p className="text-[10px] text-amber-900 dark:text-amber-200 leading-relaxed font-bold">
-                そのため、ブラウザの「キャッシュ履歴・Cookieの消去」をおこなわれますと、お題カードやメンバーのメモがすべて完全に消去されてしまいますの。
+                そのため、ブラウザの「キャッシュ履歴・Cookieの消去」をおこなうと、お題カードやメンバーのメモがすべて完全に消去されてしまいます。
               </p>
               <p className="text-[10px] text-foreground/70 dark:text-foreground/50 leading-relaxed font-medium">
-                大切なおデータを守るため、定期的に「完全保存 (JSON)」からバックアップファイルをPCにダウンロード保存することを強く推奨いたしますわ。
+                大切なデータを守るため、定期的に「完全保存 (JSON)」からバックアップファイルをPCにダウンロード保存することを強く推奨いたします。
               </p>
             </div>
 
@@ -849,7 +849,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   📁 完全フルバックアップ (JSON)
                 </label>
                 <p className="text-[10px] text-foreground/45 leading-relaxed font-semibold">
-                  お題カード、メンバーメモ、会話履歴、現在のセッション、およびUIテーマや操作設定を含む、コトバトラーでの全ての体験情報を一括して完全パック保存・復元できますわ。
+                  お題カード、メンバーメモ、会話履歴、現在のセッション、およびUIテーマや操作設定を含む、コトバトラーでの全ての体験情報を一括して完全パック保存・復元できます。
                 </p>
               </div>
 
@@ -859,7 +859,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   type="button"
                   onClick={exportJSON}
                   className="py-2.5 px-3 bg-neon-green/10 hover:bg-neon-green/20 border border-neon-green/20 text-neon-green rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                  title="すべての体験情報を一つのJSONファイルとしてPCに保存しますわ"
+                  title="すべての体験情報を一つのJSONファイルとしてPCに保存します"
                 >
                   <Download className="w-3.5 h-3.5" />
                   完全保存(JSON)
@@ -870,7 +870,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   type="button"
                   onClick={handleJsonUploadClick}
                   className="py-2.5 px-3 bg-neon-purple/10 hover:bg-neon-purple/20 border border-neon-purple/20 text-neon-purple rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                  title="バックアップJSONファイルからすべての状態を完全に復元いたしますわ"
+                  title="バックアップJSONファイルからすべての状態を完全に復元いたします"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   完全復元(JSON)
