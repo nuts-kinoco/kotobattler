@@ -143,7 +143,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
         className={`flex flex-row items-center justify-center ${spacingClass} w-full transition-all duration-300 py-4`}
         style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}
       >
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="sync">
           {displayCards.map((card, index) => {
             const isFlipped = !!flippedStates[card.id];
             const isActive = index === activeCardIndex;
@@ -196,7 +196,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
   if (displaySize === 'medium') {
     return (
       <div className="flex flex-row items-center justify-center space-x-4 w-full scale-80 sm:scale-85 md:scale-90 transition-all duration-300 py-2">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="sync">
           {displayCards.slice(0, 2).map((card, index) => {
             const isFlipped = !!flippedStates[card.id];
             const isActive = index === activeCardIndex;
@@ -263,7 +263,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
 
         {/* カルーセル配置エリア */}
         <div className="flex items-center justify-center space-x-[-80px] w-full max-w-5xl">
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode="sync">
             {displayCards.map((card, index) => {
               const isActive = index === activeCardIndex;
               const isFlipped = !!flippedStates[card.id];

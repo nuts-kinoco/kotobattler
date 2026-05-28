@@ -282,6 +282,10 @@ export const Card: React.FC<CardProps> = ({
         WebkitUserSelect: 'none',
         rotate: 0,
       }}
+      // ── initial={{ opacity: 0 }} でマウント直後の1フレームフラッシュを防ぐ ──
+      // CSSのopacity/scaleとFramer Motionの競合を完全排除するため、
+      // classNameからはopacity/scale系クラスを削除し、Framer Motionのみで制御する。
+      initial={{ opacity: 0 }}
       animate={
         isExiting
           ? { opacity: 0, scale: 0.8 }
@@ -292,9 +296,10 @@ export const Card: React.FC<CardProps> = ({
           ? { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }
           : { type: 'spring', stiffness: 300, damping: 25 }
       }
+      // opacity/scale/transition-allをclassNameから削除→Framer Motionが唯一の制御元
       className={`relative w-80 h-112 cursor-pointer perspective-1000 group select-none touch-none ${
-        isActive ? 'scale-100 z-10' : 'scale-85 opacity-35 hover:opacity-50 z-0'
-      } transition-all duration-300`}
+        isActive ? 'z-10' : 'z-0'
+      }`}
     >
       {/* === 極小スワイプガイドインジケーター === */}
       {isActive && isTouch && (
