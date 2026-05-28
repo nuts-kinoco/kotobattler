@@ -105,11 +105,17 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <motion.div
-      onClick={isActive ? undefined : onClick}
-      // Touchモードかつアクティブ時のみドラッグを有効化
+      onTap={() => {
+        if (isActive) {
+          onToggleFlip();
+        } else {
+          onClick();
+        }
+      }}
       drag={isActive && isTouch}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.65}
+      dragTransition={{ bounceStiffness: 600, bounceDamping: 30 }}
       onDragStart={() => setIsDragging(true)}
       onDrag={(_, info) => {
         setDragOffset({ x: info.offset.x, y: info.offset.y });
@@ -118,7 +124,7 @@ export const Card: React.FC<CardProps> = ({
         setIsDragging(false);
         setDragOffset({ x: 0, y: 0 });
 
-        // ドラッグ距離のしきい値判定 (真上に大きく弾いた＝Used、右に大きく弾いた＝Skip)
+        // ドラッグ距離のしきい値判定 (真上に大きく弾いてUsed、右に大きく弾いてSkip)
         if (info.offset.y < -120 && onUse) {
           onUse();
         } else if (info.offset.x > 120 && onSkip) {
@@ -129,11 +135,9 @@ export const Card: React.FC<CardProps> = ({
         isActive ? 'scale-100 z-10' : 'scale-85 opacity-35 hover:opacity-50 z-0'
       } transition-all duration-300`}
       style={{
+        touchAction: 'none',
         // ドラッグ時のリアルタイムな傾き
         rotate: isTouch && isActive ? dragOffset.x / 18 : 0,
-        // フリック時のちょっとした浮遊感
-        y: isTouch && isActive && isDragging ? dragOffset.y * 0.8 : 0,
-        x: isTouch && isActive && isDragging ? dragOffset.x * 0.8 : 0,
       }}
     >
       {/* === 極小スワイプガイドインジケーター === */}
@@ -170,10 +174,6 @@ export const Card: React.FC<CardProps> = ({
       >
         {/* === カード裏面 (カード用画像背景) === */}
         <div
-          onClick={() => {
-            // ドラッグ中でなければめくる (Desktopモードのフォールバック)
-            if (isActive && !isDragging) onToggleFlip();
-          }}
           className="absolute inset-0 w-full h-full rounded-3xl backface-hidden border border-white/5 dark:border-white/5 shadow-2xl overflow-hidden animate-ink-wave"
           style={{ 
             transform: 'rotateY(0deg)',
@@ -189,10 +189,6 @@ export const Card: React.FC<CardProps> = ({
 
         {/* === カード表面 (ガラスモーフィズム ＆ 空気感連動グラデーション) === */}
         <div
-          onClick={() => {
-            // ドラッグ中でなければめくる (Desktopモードのフォールバック)
-            if (isActive && !isDragging) onToggleFlip();
-          }}
           className={`absolute inset-0 w-full h-full rounded-3xl backface-hidden glass-card border border-white/10 dark:border-white/5 flex flex-col justify-between p-7 overflow-hidden transition-all duration-300 ${
             isActive ? styles.hoverBorder : 'border-white/5'
           }`}
