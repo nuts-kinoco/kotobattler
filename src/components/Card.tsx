@@ -16,6 +16,7 @@ interface CardProps {
   onSkip?: () => void;
   onPrev?: () => void;
   onNext?: () => void;
+  isExiting?: boolean;
 }
 
 // お題の空気感（AirSuitability）に基づいたダイナミックなカラースキーム定義
@@ -82,7 +83,8 @@ export const Card: React.FC<CardProps> = ({
   onUse,
   onSkip,
   onPrev,
-  onNext
+  onNext,
+  isExiting: isExitingProp = false
 }) => {
   const styles = getAirSuitabilityStyles(card.airSuitability);
   const isTouch = opMode === 'touch';
@@ -91,8 +93,16 @@ export const Card: React.FC<CardProps> = ({
   const cardY = useMotionValue(0);
 
   // 終了アニメーション制御
-  const [isExiting, setIsExiting] = React.useState(false);
+  const [isExitingInternal, setIsExitingInternal] = React.useState(false);
+  const isExiting = isExitingProp || isExitingInternal;
   const [isLeaving, setIsLeaving] = React.useState(false);
+
+  // 外部（PCボタンやショートカット↑キー）からの退出指示を検知してY上方向へアニメーション
+  React.useEffect(() => {
+    if (isExitingProp) {
+      animate(cardY, -1000, { duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] });
+    }
+  }, [isExitingProp, cardY]);
 
   // ドラッグ判定用フラグ（Reactステート避けてrefで管理）
   const isDraggingRef = React.useRef(false);
@@ -115,7 +125,7 @@ export const Card: React.FC<CardProps> = ({
   // カードが切り替わった瞬間に全状態をリセット
   React.useEffect(() => {
     cardY.set(0);
-    setIsExiting(false);
+    setIsExitingInternal(false);
     setIsLeaving(false);
     setIsDragging(false);
     setPullRatio(0);
@@ -216,10 +226,8 @@ export const Card: React.FC<CardProps> = ({
 
     // 1. 上に引っ張り確定 → 使用済み
     if (dy < -PULL_THRESHOLD && onUse) {
-      setIsExiting(true);
+      setIsExitingInternal(true);
       animate(cardY, -1000, { duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] });
-      // 状態更新のタイミング制御は useDeckState.useCard() 内の setTimeout(250ms) に完全委譲。
-      // ここでは即座に呼び出すのみでよい。
       onUse();
       return;
     }

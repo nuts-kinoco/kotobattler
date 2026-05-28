@@ -114,6 +114,9 @@ export default function Home() {
     }
   }, [state.activeCardIds, state.activeCardIndex, handleToggleFlip]);
 
+  // 使用済みカードの物理退場アニメーション用ステート
+  const [animatingUsedCardId, setAnimatingUsedCardId] = useState<string | null>(null);
+
   // カード「使用(Used)」処理のラップ
   const handleUseCardWrapper = useCallback((cardId: string) => {
     setFlippedStates(prev => {
@@ -121,6 +124,13 @@ export default function Home() {
       delete next[cardId];
       return next;
     });
+
+    // 即座に物理アニメーション（上に飛んでいく）をトリガーするためにステートをセット
+    setAnimatingUsedCardId(cardId);
+    setTimeout(() => {
+      setAnimatingUsedCardId(null);
+    }, 2000); // 2秒後に安全にクリーンアップ
+
     // すでに exitingAsUsedIds に登録されていなければ、PCボタンからの消費として 'button' をセット
     if (!exitingAsUsedIds.current.has(cardId)) {
       exitingAsUsedIds.current.set(cardId, 'button');
@@ -420,6 +430,7 @@ export default function Home() {
               onClearAirFilters={() => state.setSelectedAirSuitabilities([])}
               exitingAsUsedIds={exitingAsUsedIds}
               alwaysOpen={state.alwaysOpen}
+              animatingUsedCardId={animatingUsedCardId}
             />
           </main>
 

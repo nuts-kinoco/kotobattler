@@ -23,6 +23,7 @@ interface CardDeckProps {
   // ── 外部から登録された「使用済みとしてexitする」IDの集合（PCボタンなどからも登録可能）──
   exitingAsUsedIds?: React.MutableRefObject<Map<string, 'touch' | 'button'>>;
   alwaysOpen?: boolean;
+  animatingUsedCardId?: string | null;
 }
 
 export const CardDeck: React.FC<CardDeckProps> = ({
@@ -40,7 +41,8 @@ export const CardDeck: React.FC<CardDeckProps> = ({
   selectedAirSuitabilities = [],
   onClearAirFilters,
   exitingAsUsedIds: exitingAsUsedIdsProp,
-  alwaysOpen = false
+  alwaysOpen = false,
+  animatingUsedCardId = null
 }) => {
   const isCompact = displaySize === 'small' || displaySize === 'medium';
 
@@ -191,6 +193,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   onSkip={() => onSkipCard && onSkipCard(card.id)}
                   onPrev={handlePrev}
                   onNext={handleNext}
+                  isExiting={animatingUsedCardId === card.id}
                 />
               </motion.div>
             );
@@ -247,6 +250,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   onSkip={() => onSkipCard && onSkipCard(card.id)}
                   onPrev={handlePrev}
                   onNext={handleNext}
+                  isExiting={animatingUsedCardId === card.id}
                 />
               </motion.div>
             );
@@ -334,6 +338,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                     onSkip={() => onSkipCard && onSkipCard(card.id)}
                     onPrev={handlePrev}
                     onNext={handleNext}
+                    isExiting={animatingUsedCardId === card.id}
                   />
                 </motion.div>
               );
