@@ -137,35 +137,86 @@ export const Card: React.FC<CardProps> = ({
     hasDraggedRef.current = false;
   }, [card.id]);
 
+  // ── スライドレーティング（星ドラッグ増減）ロジック ──
+  const ratingContainerRef = React.useRef<HTMLDivElement>(null);
+  const [hoverRating, setHoverRating] = React.useState<number | null>(null);
+  const [isRatingDragging, setIsRatingDragging] = React.useState(false);
+
+  const calculateRating = (clientX: number) => {
+    if (!ratingContainerRef.current) return null;
+    const rect = ratingContainerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const width = rect.width;
+    const ratio = x / width;
+    const rawRating = Math.ceil(ratio * 5);
+    return Math.max(1, Math.min(5, rawRating));
+  };
+
+  const handleRatingStart = (clientX: number) => {
+    if (!isActive || !onRate) return;
+    setIsRatingDragging(true);
+    const initialRating = calculateRating(clientX);
+    if (initialRating !== null) {
+      onRate(initialRating);
+    }
+  };
+
+  const handleRatingMove = (clientX: number) => {
+    if (!isActive || !onRate || !isRatingDragging) return;
+    const currentRating = calculateRating(clientX);
+    if (currentRating !== null) {
+      onRate(currentRating);
+    }
+  };
+
+  const handleRatingEnd = () => {
+    setIsRatingDragging(false);
+    setHoverRating(null);
+  };
+
+  // グローバルなポインター移動イベントの監視（ドラッグ中に指が星エリア外に出ても追従可能にする極上UX）
+  React.useEffect(() => {
+    if (!isRatingDragging) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      handleRatingMove(e.clientX);
+    };
+
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleRatingMove(e.touches[0].clientX);
+      }
+    };
+
+    const handleGlobalEnd = () => {
+      handleRatingEnd();
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('touchmove', handleGlobalTouchMove, { passive: true });
+    window.addEventListener('mouseup', handleGlobalEnd);
+    window.addEventListener('touchend', handleGlobalEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('touchmove', handleGlobalTouchMove);
+      window.removeEventListener('mouseup', handleGlobalEnd);
+      window.removeEventListener('touchend', handleGlobalEnd);
+    };
+  }, [isRatingDragging, onRate, isActive]);
+
   const renderStars = (count: number) => {
-    return Array.from({ length: 5 }).map((_, i) => {
-      const starValue = i + 1;
-      return (
-        <button
-          key={i}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isActive && onRate) {
-              onRate(starValue);
-            }
-          }}
-          className={`p-0.5 rounded focus:outline-none focus-visible:ring-1 focus-visible:ring-neon-purple transition-all duration-200 transform ${
-            isActive ? 'hover:scale-125 cursor-pointer active:scale-95' : 'cursor-default'
-          }`}
-          title={isActive ? `このカードを星 ${starValue} に評価します` : undefined}
-          disabled={!isActive}
-        >
-          <Star
-            className={`w-4 h-4 transition-all duration-200 ${
-              i < count 
-                ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_2px_rgba(245,158,11,0.5)]' 
-                : 'text-gray-600/40 dark:text-gray-600 hover:text-amber-400/60'
-            }`}
-          />
-        </button>
-      );
-    });
+    const displayCount = hoverRating ?? count;
+    return Array.from({ length: 5 }).map((_, i) => (
+      <Star
+        key={i}
+        className={`w-4 h-4 transition-all duration-150 ${
+          i < displayCount 
+            ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_3px_rgba(245,158,11,0.55)] scale-110' 
+            : 'text-gray-600/40 dark:text-gray-600'
+        }`}
+      />
+    ));
   };
 
   // ── タッチ開始 ──
@@ -446,7 +497,36 @@ export const Card: React.FC<CardProps> = ({
               )}
 
               <div className="flex justify-between items-center text-xs text-foreground/40">
-                <div className="flex items-center space-x-1">
+                <div 
+                  ref={ratingContainerRef}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleRatingStart(e.clientX);
+                  }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                    // スマホ等のダブルタップズームやスクロールなどの標準動作を絶ち、操作に専念させます
+                    if (e.touches.length > 0) {
+                      handleRatingStart(e.touches[0].clientX);
+                    }
+                  }}
+                  onMouseMove={(e) => {
+                    if (isActive && !isRatingDragging) {
+                      const currentRating = calculateRating(e.clientX);
+                      setHoverRating(currentRating);
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (!isRatingDragging) {
+                      setHoverRating(null);
+                    }
+                  }}
+                  className={`flex items-center space-x-1 py-1.5 px-2.5 rounded-xl bg-foreground/5 border border-transparent transition-all select-none ${
+                    isActive ? 'hover:bg-foreground/10 hover:border-foreground/10 cursor-ew-resize active:scale-102' : 'cursor-default'
+                  }`}
+                  title={isActive ? '星評価をドラッグやタップで調整できます' : undefined}
+                >
                   {renderStars(card.star)}
                 </div>
                 
