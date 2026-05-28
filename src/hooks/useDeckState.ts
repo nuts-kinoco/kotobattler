@@ -79,11 +79,19 @@ export const useDeckState = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const mediaQuery = window.matchMedia('(pointer: coarse)');
-    
+    // より堅牢なマルチタッチ・スマホデバイス検出判定
+    const isTouchDevice = () => {
+      return (
+        window.matchMedia('(pointer: coarse)').matches ||
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        (navigator as any).msMaxTouchPoints > 0
+      );
+    };
+
     const updateActiveOpMode = () => {
       if (operationMode === 'auto') {
-        setActiveOpMode(mediaQuery.matches ? 'touch' : 'desktop');
+        setActiveOpMode(isTouchDevice() ? 'touch' : 'desktop');
       } else {
         setActiveOpMode(operationMode as 'desktop' | 'touch');
       }
@@ -92,10 +100,16 @@ export const useDeckState = () => {
     // 初期化時と変更時に実行
     updateActiveOpMode();
     
-    // イベントリスナーの追加
+    // イベントリスナーの追加（リサイズやメディアクエリ変更時にも再評価）
+    const mediaQuery = window.matchMedia('(pointer: coarse)');
     const listener = () => updateActiveOpMode();
     mediaQuery.addEventListener('change', listener);
-    return () => mediaQuery.removeEventListener('change', listener);
+    window.addEventListener('resize', listener);
+    
+    return () => {
+      mediaQuery.removeEventListener('change', listener);
+      window.removeEventListener('resize', listener);
+    };
   }, [operationMode]);
 
   // ==========================================

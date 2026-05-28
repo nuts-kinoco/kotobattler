@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# コトバトラー (Kotobattler)
 
-## Getting Started
+コトバトラーは、ボイスチャット（VC）やオンラインゲームの合間に、片手でサッとお題をめくって会話を盛り上げるための、VC補助用お題カードアプリケーションです。
+個人情報の送信を行わないローカル完結型設計になっており、ブラウザのデータ保存領域（LocalStorage）のみで安全に動作します。
 
-First, run the development server:
+---
 
+## 📷 スクリーンショット
+
+![コトバトラー メイン画面](public/screenshots/main.png)
+*(※画面は開発中のイメージです)*
+
+---
+
+## 💡 主な機能
+
+*   **直感的なカード操作**: スワイプやクリック操作で、スムーズにお題カードを「話した！」「パス」へ仕分けられます。
+*   **空気感フィルター**: 「はじめまして」「連勝中」「連敗中」「不穏」など、その場のリアルな雰囲気に合わせたお題のみを瞬時に抽出できます。
+*   **メンバーロッカー**: 一緒に遊ぶメンバーをあらかじめ登録し、各プレイヤーに合わせたお題の管理が可能です。また、「前回のメンバーを記憶する」機能により、次回のVCもスムーズに開始できます。
+*   **安心のバックアップ**: 作成したオリジナルのお題はCSV形式でインポート/エクスポートが可能。アプリ全体のデータ（設定、メンバー、カード）は、設定タブから一括でJSONファイルとしてバックアップ・復元できます。
+
+---
+
+## 🎮 基本的な使い方
+
+### 1. セッションの準備
+1. 右側のサイドパネルから「メンバー管理」を開き、一緒にVCに入るメンバーを登録します。
+2. プレイする状況に合わせて、上部の「空気感フィルター」（例：はじめまして、連勝中など）を選択します。
+3. 「セッション開始」ボタンを押し、参加するメンバーにチェックを入れます。
+
+### 2. ゲーム中のプレイ
+*   **お題を話した時**: カードを上にフリック（スワイプ）するか、「話した！」ボタンを押すと、カードが上にシュッと消え、次のカードが配られます。
+*   **お題をパスしたい時**: カードを右にフリックするか、「パス」ボタンを押すと、カードが右にスライドして消え、新しいお題に切り替わります。
+*   **お題を直接選ぶ時**: 左右の矢印でカードリストをめくって、好きなお題をじっくり選ぶこともできます。
+
+### 3. デッキやカードのカスタマイズ
+*   「ロッカー管理」から、オリジナルのカードを個別に追加・編集・削除できます。
+*   お題カードの一覧はCSVファイルとして一括で書き出したり、外部から取り込んだりすることが可能です。
+
+---
+
+## 📱 スマホでうまく操作できない場合（トラブルシューティング）
+
+もしスマートフォンでカードのドラッグ（フリック）操作が正しく動作しない場合は、以下の手順で強制的に「Touchモード」へ切り替えられます。
+
+1. 画面右上の **「設定」** ボタン（歯車アイコン）をタップしてコントロールパネルを開きます。
+2. コントロールパネルの **「設定 & ショートカット」** タブを開きます。
+3. 下部にある **「操作モード」** 設定で、デフォルトの **`Auto`** から **`Touch`** ボタンへと切り替えます。
+4. これにより、あらゆるモバイル端末でフリック動作（上に投げて「話した！」、右に投げて「パス」）が強制的に有効化されます。
+
+*(※スマホのブラウザ設定で「PC版サイトを表示」している場合などは、手動での切り替えが必要になることがあります)*
+
+---
+
+## 🛠️ 開発者向けセットアップ
+
+本アプリは Next.js (TypeScript / Tailwind CSS) で構築されています。
+
+### 動作環境の構築
 ```bash
+# 依存パッケージのインストール
+npm install
+
+# 開発サーバーの起動
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+起動後、ブラウザで [http://localhost:3000](http://localhost:3000) を開くとアプリを利用できます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### ビルドとエクスポート
+```bash
+npm run build
+```

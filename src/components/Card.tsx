@@ -167,11 +167,13 @@ export const Card: React.FC<CardProps> = ({
       onDragStart={handleDragStart}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
-      className={`relative w-80 h-112 cursor-pointer perspective-1000 group ${
+      className={`relative w-80 h-112 cursor-pointer perspective-1000 group select-none touch-none ${
         isActive ? 'scale-100 z-10' : 'scale-85 opacity-35 hover:opacity-50 z-0'
       } transition-all duration-300`}
       style={{
         touchAction: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
         // ドラッグ時のリアルタイムな傾き
         rotate: isTouch && isActive ? dragOffset.x / 18 : 0,
       }}
