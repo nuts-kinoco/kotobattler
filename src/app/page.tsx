@@ -33,9 +33,14 @@ export default function Home() {
     }
   }, [toastMessage]);
   
-  // ダブルタップでのシャッフル判定ロジック
+  // ダブルタップでのシャッフル判定ロジック（デスクトップ/マウス環境専用として安全に調律）
   const lastTapRef = React.useRef(0);
-  const handleBackgroundDoubleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const handleBackgroundDoubleTap = useCallback((e: React.MouseEvent) => {
+    // タッチデバイス（Touchモード）の時は誤動作防止のため背景ダブルタップをバイパス
+    if (state.activeOpMode === 'touch') {
+      return;
+    }
+
     const target = e.target as HTMLElement;
     if (
       target.tagName === 'BUTTON' || 
@@ -155,7 +160,6 @@ export default function Home() {
   return (
     <div 
       onMouseDown={handleBackgroundDoubleTap}
-      onTouchEnd={handleBackgroundDoubleTap}
       className="flex-1 w-full flex flex-col min-h-screen relative overflow-hidden bg-background text-foreground transition-colors duration-300"
     >
       {/* 背景装飾ネオンの光 (パステル調の超低不透明度) */}
