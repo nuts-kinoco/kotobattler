@@ -117,6 +117,24 @@ export const Card: React.FC<CardProps> = ({
   const PULL_THRESHOLD = 120;
   const isPullingEnough = isDragging && dragOffset.y < -PULL_THRESHOLD;
 
+  // ドラッグ時のジッター（微小な指の震え・タッチノイズ）を完全に除去し、
+  // 120px以上引っ張りきってホールドしている間はポップアップの位置を完全に静止させるノイズフィルター
+  const getSmoothY = () => {
+    if (!isDragging) return 0;
+    
+    // ホールド状態(120px以上引っ張り状態)の時は、完全にピタッと座標を静止させる
+    if (dragOffset.y < -PULL_THRESHOLD) {
+      return -PULL_THRESHOLD * 0.15; // 静止目標値
+    }
+    
+    // 3px以下の超微細なタッチのブレ（チャタリング）は完全にカットするデッドゾーン
+    if (Math.abs(dragOffset.y) < 3) {
+      return 0;
+    }
+    
+    return dragOffset.y * 0.15;
+  };
+
   // インジケーターの透明度計算
   const useOpacity = isDragging && dragOffset.y < 0 ? Math.min(1, Math.max(0, -dragOffset.y / 100)) : 0;
   const skipOpacity = isDragging && dragOffset.x > 0 ? Math.min(1, Math.max(0, dragOffset.x / 100)) : 0;
@@ -192,9 +210,9 @@ export const Card: React.FC<CardProps> = ({
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       drag={isActive && isTouch && !isLeaving && !isExiting ? "y" : false}
-      dragConstraints={{ top: -300, bottom: 0 }}
-      dragElastic={0.15} // タッチの微小なブレ・チャタリングを吸収し、しっとり吸い付く高級感のあるドラッグへ
-      dragTransition={{ bounceStiffness: 400, bounceDamping: 40 }}
+      dragConstraints={{ top: -150, bottom: 0 }}
+      dragElastic={{ top: 0, bottom: 0.15 }} // 上へ引ききった時のバネ反発を0にしてホールド時のガタつきを根絶、下へ戻す時の弾性のみ維持
+      dragTransition={{ bounceStiffness: 450, bounceDamping: 45 }}
       onDragStart={handleDragStart}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
@@ -215,8 +233,8 @@ export const Card: React.FC<CardProps> = ({
         touchAction: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        // ドラッグ時のリアルタイムな傾き（離脱中・退場中はロック）
-        rotate: isTouch && isActive && !isLeaving && !isExiting ? dragOffset.x / 18 : 0,
+        // ドラッグ時はY軸固定のため、回転ブレは完全0に固定してガタつきを徹底排除
+        rotate: 0,
       }}
     >
       {/* === 極小スワイプガイドインジケーター === */}
@@ -231,7 +249,7 @@ export const Card: React.FC<CardProps> = ({
             }`}
             style={{
               opacity: useOpacity,
-              transform: `translateX(-50%) translateY(${Math.min(0, dragOffset.y * 0.15)}px) scale(${0.8 + useOpacity * 0.2})`,
+              transform: `translateX(-50%) translateY(${getSmoothY()}px) scale(${0.8 + useOpacity * 0.2})`,
             }}
           >
             <span>{isPullingEnough ? '✨ 離して使用済みにする ✨' : '↑ 引っ張って使用済み'}</span>
