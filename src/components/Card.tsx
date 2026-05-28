@@ -297,7 +297,7 @@ export const Card: React.FC<CardProps> = ({
           : { type: 'spring', stiffness: 300, damping: 25 }
       }
       // opacity/scale/transition-allをclassNameから削除→Framer Motionが唯一の制御元
-      className={`relative w-80 h-112 cursor-pointer perspective-1000 group select-none touch-none ${
+      className={`relative w-80 h-112 cursor-pointer perspective-1000 group select-none touch-none outline-none focus:outline-none ${
         isActive ? 'z-10' : 'z-0'
       }`}
     >
@@ -435,6 +435,12 @@ export const Card: React.FC<CardProps> = ({
       <style jsx global>{`
         .perspective-1000 {
           perspective: 1000px;
+          outline: none !important;
+        }
+        .perspective-1000:focus, .perspective-1000:active, .perspective-1000 *:focus,
+        .perspective-1000 *:focus-visible, .perspective-1000 div:focus, .perspective-1000 div:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
         }
         .preserve-3d {
           transform-style: preserve-3d;

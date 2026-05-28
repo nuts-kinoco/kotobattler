@@ -38,6 +38,7 @@ export const useDeckState = () => {
   const [operationMode, setOperationMode] = useState<OperationMode>('auto');
   const [activeOpMode, setActiveOpMode] = useState<'desktop' | 'touch'>('desktop');
   const [hasSeenGestureHint, setHasSeenGestureHint] = useState<boolean>(false);
+  const [alwaysOpen, setAlwaysOpen] = useState<boolean>(false);
   
   // データ破損（パースエラー等）を検知してユーザーに通知・復元を促すためのフラグ
   const [isDataCorrupted, setIsDataCorrupted] = useState<boolean>(false);
@@ -131,6 +132,7 @@ export const useDeckState = () => {
       const loadedSelectedAirs = storage.loadSelectedAirSuitabilities([]);
       const loadedOpMode = storage.loadOperationMode('auto');
       const loadedGestureHint = storage.loadHasSeenGestureHint(false);
+      const loadedAlwaysOpen = storage.loadAlwaysOpen(false);
 
       // 2. 状態へのセット
       setCards(loadedCards);
@@ -145,6 +147,7 @@ export const useDeckState = () => {
       setSelectedAirSuitabilities(loadedSelectedAirs);
       setOperationMode(loadedOpMode);
       setHasSeenGestureHint(loadedGestureHint);
+      setAlwaysOpen(loadedAlwaysOpen);
 
       // 初回テーマのCSSクラス適用
       applyTheme(loadedTheme);
@@ -254,6 +257,11 @@ export const useDeckState = () => {
     storage.saveHasSeenGestureHint(seen);
   };
 
+  const handleSetAlwaysOpen = (open: boolean) => {
+    setAlwaysOpen(open);
+    storage.saveAlwaysOpen(open);
+  };
+
   // --- アプリの完全な初期化・リセットアクション (フォールバック安全策) ---
   const resetAllData = () => {
     storage.clearAll();
@@ -274,6 +282,7 @@ export const useDeckState = () => {
     setSelectedAirSuitabilities([]);
     setOperationMode('auto');
     setHasSeenGestureHint(false);
+    setAlwaysOpen(false);
     
     setTimeout(() => {
       drawCards(3);
@@ -734,6 +743,7 @@ export const useDeckState = () => {
       applyTheme(loadedTheme);
       setIsDataCorrupted(false);
       setKeepPreviousMembers(storage.loadKeepPreviousMembers(true));
+      setAlwaysOpen(storage.loadAlwaysOpen(false));
 
       // 自動リサイズで表示枚数がリセットされる
       const width = window.innerWidth;
@@ -773,6 +783,7 @@ export const useDeckState = () => {
     operationMode,
     activeOpMode,
     hasSeenGestureHint,
+    alwaysOpen,
     drawPool,
     theme,
     displaySize,
@@ -788,6 +799,7 @@ export const useDeckState = () => {
     toggleAirSuitability,
     setOperationMode: handleSetOperationMode,
     setHasSeenGestureHint: handleSetHasSeenGestureHint,
+    setAlwaysOpen: handleSetAlwaysOpen,
     setTheme: handleSetTheme,
     setKeepPreviousMembers: handleSetKeepPreviousMembers,
     setIsDataCorrupted,

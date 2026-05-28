@@ -33,6 +33,7 @@ export const importService = {
         if (parsed.settings.currentDeckId) storage.saveCurrentDeckId(parsed.settings.currentDeckId);
         if (parsed.settings.keepPreviousMembers !== undefined) storage.saveKeepPreviousMembers(parsed.settings.keepPreviousMembers);
         if (parsed.settings.operationMode) storage.saveOperationMode(parsed.settings.operationMode);
+        if (parsed.settings.alwaysOpen !== undefined) storage.saveAlwaysOpen(parsed.settings.alwaysOpen);
       }
 
       return true;

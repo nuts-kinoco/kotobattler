@@ -85,6 +85,10 @@ export default function Home() {
   // 各カードのめくり状態 (cardId => isFlipped)
   const [flippedStates, setFlippedStates] = useState<Record<string, boolean>>({});
 
+  // ── 使用済み exit アニメーションタイプ判定用 ──
+  // cardId => 'touch' | 'button'
+  const exitingAsUsedIds = React.useRef<Map<string, 'touch' | 'button'>>(new Map());
+
   const [activeMemoPersonId, setActiveMemoPersonId] = useState<string | null>(null);
   const [quickMemoText, setQuickMemoText] = useState<string>('');
 
@@ -117,6 +121,12 @@ export default function Home() {
       delete next[cardId];
       return next;
     });
+    // すでに exitingAsUsedIds に登録されていなければ、PCボタンからの消費として 'button' をセット
+    if (!exitingAsUsedIds.current.has(cardId)) {
+      exitingAsUsedIds.current.set(cardId, 'button');
+      // 2秒後にクリーンアップ（メモリリーク防止）
+      setTimeout(() => exitingAsUsedIds.current.delete(cardId), 2000);
+    }
     state.useCard(cardId);
   }, [state]);
 
@@ -408,6 +418,8 @@ export default function Home() {
               onSkipCard={handleSkipCardWrapper}
               selectedAirSuitabilities={state.selectedAirSuitabilities}
               onClearAirFilters={() => state.setSelectedAirSuitabilities([])}
+              exitingAsUsedIds={exitingAsUsedIds}
+              alwaysOpen={state.alwaysOpen}
             />
           </main>
 
@@ -518,12 +530,14 @@ export default function Home() {
             displaySize={state.displaySize}
             keepPreviousMembers={state.keepPreviousMembers}
             operationMode={state.operationMode}
+            alwaysOpen={state.alwaysOpen}
             setCardDisplayCount={state.setCardDisplayCount}
             setShortcutEnabled={state.setShortcutEnabled}
             setSelectedAirSuitabilities={state.setSelectedAirSuitabilities}
             setOperationMode={state.setOperationMode}
             setTheme={state.setTheme}
             setKeepPreviousMembers={state.setKeepPreviousMembers}
+            setAlwaysOpen={state.setAlwaysOpen}
             startSession={state.startSession}
             endSession={state.endSession}
             addPerson={state.addPerson}

@@ -79,7 +79,8 @@ const KEYS = {
   AIR_MODES: 'squid_air_modes',
   SELECTED_AIR_SUITABILITIES: 'squid_selected_air_suitabilities',
   OPERATION_MODE: 'squid_operation_mode',
-  HAS_SEEN_GESTURE_HINT: 'squid_has_seen_gesture_hint'
+  HAS_SEEN_GESTURE_HINT: 'squid_has_seen_gesture_hint',
+  ALWAYS_OPEN: 'squid_always_open'
 } as const;
 
 export const storage = {
@@ -238,6 +239,20 @@ export const storage = {
   saveHasSeenGestureHint: (seen: boolean): void => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(KEYS.HAS_SEEN_GESTURE_HINT, String(seen));
+    }
+  },
+
+  // --- 常時オープンモード (常時表面) ---
+  loadAlwaysOpen: (fallback: boolean): boolean => {
+    if (typeof window === 'undefined') return fallback;
+    const data = localStorage.getItem(KEYS.ALWAYS_OPEN);
+    if (data === 'true') return true;
+    if (data === 'false') return false;
+    return fallback;
+  },
+  saveAlwaysOpen: (alwaysOpen: boolean): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(KEYS.ALWAYS_OPEN, String(alwaysOpen));
     }
   },
 

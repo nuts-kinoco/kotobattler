@@ -18,6 +18,7 @@ export interface KotobattlerBackupData {
     currentDeckId: string;
     keepPreviousMembers?: boolean;
     operationMode?: OperationMode;
+    alwaysOpen?: boolean;
   };
 }
 
@@ -41,7 +42,8 @@ export const backupService = {
         shortcutEnabled: storage.loadShortcutEnabled(true),
         currentDeckId: storage.loadCurrentDeckId('deck-all'),
         keepPreviousMembers: storage.loadKeepPreviousMembers(true),
-        operationMode: storage.loadOperationMode('auto')
+        operationMode: storage.loadOperationMode('auto'),
+        alwaysOpen: storage.loadAlwaysOpen(false)
       }
     };
 

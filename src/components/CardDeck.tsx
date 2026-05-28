@@ -18,8 +18,11 @@ interface CardDeckProps {
   opMode?: 'desktop' | 'touch';
   onUseCard?: (cardId: string) => void;
   onSkipCard?: (cardId: string) => void;
-  selectedAirSuitabilities?: string[]; // アクティブな空気感フィルターリストを受け取る
-  onClearAirFilters?: () => void;      // 空気感フィルターをその場でクリアするアクション
+  selectedAirSuitabilities?: string[];
+  onClearAirFilters?: () => void;
+  // ── 外部から登録された「使用済みとしてexitする」IDの集合（PCボタンなどからも登録可能）──
+  exitingAsUsedIds?: React.MutableRefObject<Map<string, 'touch' | 'button'>>;
+  alwaysOpen?: boolean;
 }
 
 export const CardDeck: React.FC<CardDeckProps> = ({
@@ -35,15 +38,17 @@ export const CardDeck: React.FC<CardDeckProps> = ({
   onUseCard,
   onSkipCard,
   selectedAirSuitabilities = [],
-  onClearAirFilters
+  onClearAirFilters,
+  exitingAsUsedIds: exitingAsUsedIdsProp,
+  alwaysOpen = false
 }) => {
   const isCompact = displaySize === 'small' || displaySize === 'medium';
 
   // ── 使用済みexit追跡 ──────────────────────────────────────────────────────
-  // AnimatePresence の exit 時に card.state を参照すると React 18 のバッチ処理により
-  // 「古い state（unused）」が渡されてしまい exit 方向が横（x:500）になる問題を防ぐ。
-  // onUse が呼ばれた瞬間に cardId を記録し、exit 判定に使用する。
-  const exitingAsUsedIds = React.useRef<Set<string>>(new Set());
+  // PCボタンからもタッチスワイプからも共通の「使用済みID」集合を一元管理。
+  // propで上位から渡された場合はそれを使い、ない場合は内部refをフォールバックとして生成。
+  const internalExitingAsUsedIds = React.useRef<Map<string, 'touch' | 'button'>>(new Map());
+  const exitingAsUsedIds = exitingAsUsedIdsProp ?? internalExitingAsUsedIds;
 
   // アプリに表示する対象 of カードオブジェクトを順番に取得
   const displayCards = activeCardIds
@@ -61,11 +66,11 @@ export const CardDeck: React.FC<CardDeckProps> = ({
   };
 
   // 使用済みexit判定ヘルパー
-  const isExitingAsUsed = (cardId: string) => exitingAsUsedIds.current.has(cardId);
+  const getExitType = (cardId: string) => exitingAsUsedIds.current.get(cardId);
 
   // onUse ラッパー：cardId を使用済みとして記録してから親のコールバックを呼ぶ
   const handleUseCard = (cardId: string) => {
-    exitingAsUsedIds.current.add(cardId);
+    exitingAsUsedIds.current.set(cardId, 'touch');
     // exit 完了後にクリーンアップ（メモリリーク防止）
     setTimeout(() => exitingAsUsedIds.current.delete(cardId), 2000);
     onUseCard && onUseCard(cardId);
@@ -145,7 +150,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
       >
         <AnimatePresence mode="sync">
           {displayCards.map((card, index) => {
-            const isFlipped = !!flippedStates[card.id];
+            const isFlipped = alwaysOpen ? true : !!flippedStates[card.id];
             const isActive = index === activeCardIndex;
             
             // 重なり順の制御
@@ -163,9 +168,12 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   transition: { duration: 0.25 }
                 }}
                 exit={
-                  isExitingAsUsed(card.id)
+                  getExitType(card.id) === 'touch'
                     // 使用済みexit: Card.tsx が既にアニメーション済みなので即時消去
                     ? { opacity: 0, transition: { duration: 0 } }
+                    : getExitType(card.id) === 'button'
+                    // PC版ボタン時は上にスライドアウト
+                    ? { opacity: 0, y: -800, scale: 0.85, transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] } }
                     // パスexit: 横にスライドアウト
                     : { opacity: 0, x: 500, scale: 0.85, transition: { duration: 0.35 } }
                 }
@@ -175,7 +183,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                 <Card
                   card={card}
                   isFlipped={isFlipped}
-                  onToggleFlip={() => onToggleFlip(card.id)}
+                  onToggleFlip={alwaysOpen ? () => {} : () => onToggleFlip(card.id)}
                   isActive={isActive}
                   onClick={() => setActiveCardIndex(index)}
                   opMode={opMode}
@@ -198,7 +206,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
       <div className="flex flex-row items-center justify-center space-x-4 w-full scale-80 sm:scale-85 md:scale-90 transition-all duration-300 py-2">
         <AnimatePresence mode="sync">
           {displayCards.slice(0, 2).map((card, index) => {
-            const isFlipped = !!flippedStates[card.id];
+            const isFlipped = alwaysOpen ? true : !!flippedStates[card.id];
             const isActive = index === activeCardIndex;
             
             return (
@@ -220,8 +228,10 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   }
                 }}
                 exit={
-                  isExitingAsUsed(card.id)
+                  getExitType(card.id) === 'touch'
                     ? { opacity: 0, transition: { duration: 0 } }
+                    : getExitType(card.id) === 'button'
+                    ? { opacity: 0, y: -800, scale: 0.85, transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] } }
                     : { opacity: 0, x: 500, scale: 0.85, transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] } }
                 }
                 className="transition-all duration-300 shrink-0"
@@ -229,7 +239,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                 <Card
                   card={card}
                   isFlipped={isFlipped}
-                  onToggleFlip={() => onToggleFlip(card.id)}
+                  onToggleFlip={alwaysOpen ? () => {} : () => onToggleFlip(card.id)}
                   isActive={isActive}
                   onClick={() => setActiveCardIndex(index)}
                   opMode={opMode}
@@ -266,7 +276,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
           <AnimatePresence mode="sync">
             {displayCards.map((card, index) => {
               const isActive = index === activeCardIndex;
-              const isFlipped = !!flippedStates[card.id];
+              const isFlipped = alwaysOpen ? true : !!flippedStates[card.id];
 
               // 3枚以上の場合のフォーカス効果
               let zIndex = 0;
@@ -301,9 +311,12 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                     }
                   }}
                   exit={
-                    isExitingAsUsed(card.id)
+                    getExitType(card.id) === 'touch'
                       // 使用済みexit: Card.tsx が既にアニメーション済みなので即時消去
                       ? { opacity: 0, transition: { duration: 0 } }
+                      : getExitType(card.id) === 'button'
+                      // PC版ボタン時は上にスライドアウト
+                      ? { opacity: 0, y: -800, scale: 0.85, transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] } }
                       // パスexit: 横にスライドアウト
                       : { opacity: 0, x: 500, scale: 0.85, transition: { duration: 0.35, ease: [0.25, 0.8, 0.25, 1] } }
                   }
@@ -313,7 +326,7 @@ export const CardDeck: React.FC<CardDeckProps> = ({
                   <Card
                     card={card}
                     isFlipped={isFlipped}
-                    onToggleFlip={() => onToggleFlip(card.id)}
+                    onToggleFlip={alwaysOpen ? () => {} : () => onToggleFlip(card.id)}
                     isActive={isActive}
                     onClick={() => setActiveCardIndex(index)}
                     opMode={opMode}

@@ -22,12 +22,14 @@ interface SidePanelProps {
   displaySize: 'small' | 'medium' | 'large';
   keepPreviousMembers: boolean;
   operationMode: 'auto' | 'desktop' | 'touch';
+  alwaysOpen: boolean;
   setCardDisplayCount: (count: number) => void;
   setShortcutEnabled: (enabled: boolean) => void;
   setSelectedAirSuitabilities: (suitabilities: string[]) => void;
   setOperationMode: (mode: 'auto' | 'desktop' | 'touch') => void;
   setTheme: (theme: 'dark' | 'light') => void;
   setKeepPreviousMembers: (keep: boolean) => void;
+  setAlwaysOpen: (open: boolean) => void;
   startSession: (personIds: string[]) => void;
   endSession: () => void;
   addPerson: (name: string, aliases: string[], memo?: string) => Person;
@@ -52,12 +54,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   displaySize,
   keepPreviousMembers,
   operationMode,
+  alwaysOpen,
   setCardDisplayCount,
   setShortcutEnabled,
   setSelectedAirSuitabilities,
   setOperationMode,
   setTheme,
   setKeepPreviousMembers,
+  setAlwaysOpen,
   startSession,
   endSession,
   addPerson,
@@ -756,6 +760,25 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                     type="checkbox"
                     checked={keepPreviousMembers}
                     onChange={(e) => setKeepPreviousMembers(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-400/20 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 dark:after:bg-slate-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-green peer-checked:after:bg-background"></div>
+                </label>
+              </div>
+            </div>
+
+            {/* 常時オープンモードトグル */}
+            <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-foreground/90">常時オープンモード (常時表面)</label>
+                  <p className="text-[10px] text-foreground/45">山札のカードを常に表向きにして表示します</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={alwaysOpen}
+                    onChange={(e) => setAlwaysOpen(e.target.checked)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-slate-400/20 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 dark:after:bg-slate-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-green peer-checked:after:bg-background"></div>
