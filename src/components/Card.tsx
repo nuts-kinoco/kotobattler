@@ -86,14 +86,16 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const styles = getAirSuitabilityStyles(card.airSuitability);
 
-  // ドラッグ状態 & 画面外への離脱(Leaving)状態の管理
+  // ドラッグ状態 & 画面外への離脱(Leaving/Exiting)状態の管理
   const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = React.useState(false);
   const [isLeaving, setIsLeaving] = React.useState(false);
+  const [isExiting, setIsExiting] = React.useState(false);
 
   // カードが切り替わった（マウント・更新）瞬間にすべてのドラッグ・離脱フラグをクリーンに初期化
   React.useEffect(() => {
     setIsLeaving(false);
+    setIsExiting(false);
     setDragOffset({ x: 0, y: 0 });
     setIsDragging(false);
   }, [card.id]);
@@ -110,6 +112,10 @@ export const Card: React.FC<CardProps> = ({
   };
 
   const isTouch = opMode === 'touch';
+
+  // 引っ張り閾値の設定 (iPhoneのPull to Refreshと同等の吸い付き量)
+  const PULL_THRESHOLD = 120;
+  const isPullingEnough = isDragging && dragOffset.y < -PULL_THRESHOLD;
 
   // インジケーターの透明度計算
   const useOpacity = isDragging && dragOffset.y < 0 ? Math.min(1, Math.max(0, -dragOffset.y / 100)) : 0;
@@ -134,26 +140,30 @@ export const Card: React.FC<CardProps> = ({
   const handleDragEnd = (_: any, info: any) => {
     setIsDragging(false);
 
-    const threshold = 100; // フリック感度を良くするため100pxに調律
+    // 1. 上に引っ張り続けて離した(使用済み確定)
+    if (dragOffset.y < -PULL_THRESHOLD && onUse) {
+      setIsExiting(true);
+      // ローカルの超高速真上退場アニメーション(220ms)が完了した後に親のステートを切り替える
+      // これにより、画面更新時のチラつき・ガタつきは物理的に100%消失します！
+      setTimeout(() => {
+        onUse();
+      }, 220);
+      return;
+    } 
     
-    if (info.offset.y < -threshold && onUse) {
-      // 上スワイプ: 使用済み (iPhoneタスクキル)
-      setIsLeaving(true);
-      onUse();
-      return; // 0,0に戻すのをスキップし、そのまま上に飛び去らせる
-    } else if (info.offset.x > threshold && onNext) {
-      // 右スワイプ: 次のカード (パス)
+    // 2. 左右のスワイプ(パス)
+    const sideThreshold = 100;
+    if (info.offset.x > sideThreshold && onNext) {
       setIsLeaving(true);
       onNext();
-      return; // 0,0に戻すのをスキップ
-    } else if (info.offset.x < -threshold && onPrev) {
-      // 左スワイプ: 前のカード
+      return;
+    } else if (info.offset.x < -sideThreshold && onPrev) {
       setIsLeaving(true);
       onPrev();
-      return; // 0,0に戻すのをスキップ
+      return;
     }
 
-    // どの閾値も超えなかった場合のみ、元の位置(中央)へ滑らかに戻す
+    // どこにも達しなかった場合は、元の位置へ滑らかに戻る
     setDragOffset({ x: 0, y: 0 });
 
     // 指を離した瞬間に hasDragged が即時クリアされると、Framer MotionのonTapが
@@ -181,13 +191,23 @@ export const Card: React.FC<CardProps> = ({
       onTouchEnd={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
-      drag={isActive && isTouch && !isLeaving}
+      drag={isActive && isTouch && !isLeaving && !isExiting}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.65}
       dragTransition={{ bounceStiffness: 600, bounceDamping: 30 }}
       onDragStart={handleDragStart}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
+      animate={
+        isExiting 
+          ? { y: -1000, opacity: 0, scale: 0.8, rotate: 0 } 
+          : { y: 0, opacity: 1, scale: isActive ? 1 : 0.85 }
+      }
+      transition={
+        isExiting 
+          ? { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] } // 高速な上に抜けるイージング
+          : { type: 'spring', stiffness: 300, damping: 25 }
+      }
       className={`relative w-80 h-112 cursor-pointer perspective-1000 group select-none touch-none ${
         isActive ? 'scale-100 z-10' : 'scale-85 opacity-35 hover:opacity-50 z-0'
       } transition-all duration-300`}
@@ -195,22 +215,26 @@ export const Card: React.FC<CardProps> = ({
         touchAction: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        // ドラッグ時のリアルタイムな傾き（離脱中は最後の傾きを滑らかに維持するか、退場演出に同期）
-        rotate: isTouch && isActive && !isLeaving ? dragOffset.x / 18 : 0,
+        // ドラッグ時のリアルタイムな傾き（離脱中・退場中はロック）
+        rotate: isTouch && isActive && !isLeaving && !isExiting ? dragOffset.x / 18 : 0,
       }}
     >
       {/* === 極小スワイプガイドインジケーター === */}
       {isActive && isTouch && (
         <>
-          {/* 上部: 話した！インジケーター */}
+          {/* 上部: 話した！インジケーター (Pull to Refresh 同調スタイル) */}
           <div
-            className="absolute -top-10 left-1/2 -translate-x-1/2 bg-neon-green/20 border border-neon-green/45 text-neon-green font-black text-[11px] px-3.5 py-1.5 rounded-full shadow-lg shadow-neon-green/10 flex items-center gap-1 z-40 pointer-events-none transition-all duration-100"
+            className={`absolute -top-12 left-1/2 -translate-x-1/2 font-black text-[10px] px-3.5 py-1.5 rounded-full shadow-lg transition-all duration-150 z-40 pointer-events-none flex items-center gap-1.5 ${
+              isPullingEnough
+                ? 'bg-neon-green text-background border border-neon-green shadow-neon-green/30 scale-105 animate-pulse'
+                : 'bg-neon-green/20 border border-neon-green/30 text-neon-green'
+            }`}
             style={{
               opacity: useOpacity,
               transform: `translateX(-50%) translateY(${Math.min(0, dragOffset.y * 0.15)}px) scale(${0.8 + useOpacity * 0.2})`,
             }}
           >
-            <span>↑ 話した！</span>
+            <span>{isPullingEnough ? '✨ 離して使用済みにする ✨' : '↑ 引っ張って使用済み'}</span>
           </div>
 
           {/* 右側: パスインジケーター */}
