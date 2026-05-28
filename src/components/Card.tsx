@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { Star, AlertCircle, Users } from 'lucide-react';
 import { Card as CardType } from '../types/deck';
 
@@ -23,7 +23,7 @@ const getAirSuitabilityStyles = (suitability?: string) => {
   switch (suitability) {
     case 'はじめまして':
       return {
-        gradientColor: 'rgba(6, 182, 212, 0.05)', // シアン
+        gradientColor: 'rgba(6, 182, 212, 0.05)',
         hoverBorder: 'group-hover:border-cyan-400/40 focus-within:border-cyan-400/40',
         borderLeft: 'border-l-2 border-cyan-400 dark:border-cyan-300',
         badgeBg: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-600 dark:text-cyan-300',
@@ -31,7 +31,7 @@ const getAirSuitabilityStyles = (suitability?: string) => {
       };
     case '静か':
       return {
-        gradientColor: 'rgba(16, 185, 129, 0.05)', // エメラルド
+        gradientColor: 'rgba(16, 185, 129, 0.05)',
         hoverBorder: 'group-hover:border-emerald-400/40 focus-within:border-emerald-400/40',
         borderLeft: 'border-l-2 border-emerald-400 dark:border-emerald-300',
         badgeBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-300',
@@ -39,7 +39,7 @@ const getAirSuitabilityStyles = (suitability?: string) => {
       };
     case '盛り上がり':
       return {
-        gradientColor: 'rgba(245, 158, 11, 0.06)', // アンバー
+        gradientColor: 'rgba(245, 158, 11, 0.06)',
         hoverBorder: 'group-hover:border-amber-400/40 focus-within:border-amber-400/40',
         borderLeft: 'border-l-2 border-amber-400 dark:border-amber-300',
         badgeBg: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-300',
@@ -47,7 +47,7 @@ const getAirSuitabilityStyles = (suitability?: string) => {
       };
     case '深夜帯':
       return {
-        gradientColor: 'rgba(139, 92, 246, 0.06)', // バイオレット
+        gradientColor: 'rgba(139, 92, 246, 0.06)',
         hoverBorder: 'group-hover:border-violet-400/40 focus-within:border-violet-400/40',
         borderLeft: 'border-l-2 border-violet-400 dark:border-violet-300',
         badgeBg: 'bg-violet-500/10 border-violet-500/20 text-violet-600 dark:text-violet-300',
@@ -55,7 +55,7 @@ const getAirSuitabilityStyles = (suitability?: string) => {
       };
     case '疲れ気味':
       return {
-        gradientColor: 'rgba(244, 63, 94, 0.06)', // ローズ
+        gradientColor: 'rgba(244, 63, 94, 0.06)',
         hoverBorder: 'group-hover:border-rose-400/40 focus-within:border-rose-400/40',
         borderLeft: 'border-l-2 border-rose-400 dark:border-rose-300',
         badgeBg: 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-300',
@@ -63,7 +63,7 @@ const getAirSuitabilityStyles = (suitability?: string) => {
       };
     default:
       return {
-        gradientColor: 'rgba(148, 163, 184, 0.04)', // スレートグレー
+        gradientColor: 'rgba(148, 163, 184, 0.04)',
         hoverBorder: 'group-hover:border-slate-400/30 focus-within:border-slate-400/30',
         borderLeft: 'border-l-2 border-slate-400 dark:border-slate-300',
         badgeBg: 'bg-slate-500/10 border-slate-500/20 text-slate-600 dark:text-slate-300',
@@ -85,19 +85,44 @@ export const Card: React.FC<CardProps> = ({
   onNext
 }) => {
   const styles = getAirSuitabilityStyles(card.airSuitability);
+  const isTouch = opMode === 'touch';
 
-  // ドラッグ状態 & 画面外への離脱(Leaving/Exiting)状態の管理
-  const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [isLeaving, setIsLeaving] = React.useState(false);
+  // ── useMotionValue でカード本体のY座標を直接制御（Reactステート不使用でガタつきゼロ） ──
+  const cardY = useMotionValue(0);
+
+  // 終了アニメーション制御
   const [isExiting, setIsExiting] = React.useState(false);
+  const [isLeaving, setIsLeaving] = React.useState(false);
 
-  // カードが切り替わった（マウント・更新）瞬間にすべてのドラッグ・離脱フラグをクリーンに初期化
+  // ドラッグ判定用フラグ（Reactステート避けてrefで管理）
+  const isDraggingRef = React.useRef(false);
+  const hasDraggedRef = React.useRef(false);
+  const startYRef = React.useRef(0);
+  const startXRef = React.useRef(0);
+  const currentYRef = React.useRef(0);
+  const currentXRef = React.useRef(0);
+
+  // インジケーター表示制御（こちらはUIに関わるのでstate）
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [pullRatio, setPullRatio] = React.useState(0);   // 0〜1 (1=閾値到達)
+  const [isPullingEnough, setIsPullingEnough] = React.useState(false);
+  const [xOffset, setXOffset] = React.useState(0);
+
+  const PULL_THRESHOLD = 120; // 上方向の引き閾値(px)
+  const SIDE_THRESHOLD = 100; // 左右スワイプ閾値(px)
+  const TOP_LIMIT = -150;     // ドラッグできる最大上方向距離(px)
+
+  // カードが切り替わった瞬間に全状態をリセット
   React.useEffect(() => {
-    setIsLeaving(false);
+    cardY.set(0);
     setIsExiting(false);
-    setDragOffset({ x: 0, y: 0 });
+    setIsLeaving(false);
     setIsDragging(false);
+    setPullRatio(0);
+    setIsPullingEnough(false);
+    setXOffset(0);
+    isDraggingRef.current = false;
+    hasDraggedRef.current = false;
   }, [card.id]);
 
   const renderStars = (count: number) => {
@@ -111,145 +136,177 @@ export const Card: React.FC<CardProps> = ({
     ));
   };
 
-  const isTouch = opMode === 'touch';
+  // ── タッチ開始 ──
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (!isActive || !isTouch || isExiting || isLeaving) return;
 
-  // 引っ張り閾値の設定 (iPhoneのPull to Refreshと同等の吸い付き量)
-  const PULL_THRESHOLD = 120;
-  const isPullingEnough = isDragging && dragOffset.y < -PULL_THRESHOLD;
-
-  // ドラッグ時のジッター（微小な指の震え・タッチノイズ）を完全に除去し、
-  // 120px以上引っ張りきってホールドしている間はポップアップの位置を完全に静止させるノイズフィルター
-  const getSmoothY = () => {
-    if (!isDragging) return 0;
-    
-    // ホールド状態(120px以上引っ張り状態)の時は、完全にピタッと座標を静止させる
-    if (dragOffset.y < -PULL_THRESHOLD) {
-      return -PULL_THRESHOLD * 0.15; // 静止目標値
-    }
-    
-    // 3px以下の超微細なタッチのブレ（チャタリング）は完全にカットするデッドゾーン
-    if (Math.abs(dragOffset.y) < 3) {
-      return 0;
-    }
-    
-    return dragOffset.y * 0.15;
-  };
-
-  // インジケーターの透明度計算
-  const useOpacity = isDragging && dragOffset.y < 0 ? Math.min(1, Math.max(0, -dragOffset.y / 100)) : 0;
-  const skipOpacity = isDragging && dragOffset.x > 0 ? Math.min(1, Math.max(0, dragOffset.x / 100)) : 0;
-
-  // ドラッグ中に一定以上の距離を動かしたかどうかの履歴フラグ
-  const hasDraggedRef = React.useRef(false);
-
-  const handleDragStart = () => {
-    setIsDragging(true);
+    const touch = e.touches[0];
+    startYRef.current = touch.clientY;
+    startXRef.current = touch.clientX;
+    currentYRef.current = touch.clientY;
+    currentXRef.current = touch.clientX;
+    isDraggingRef.current = true;
     hasDraggedRef.current = false;
+    setIsDragging(true);
   };
 
-  const handleDrag = (_: any, info: any) => {
-    setDragOffset({ x: info.offset.x, y: info.offset.y });
-    // わずかでもドラッグ移動（15px以上）があった履歴があれば、タップ判定を無効化
-    if (Math.abs(info.offset.x) > 15 || Math.abs(info.offset.y) > 15) {
+  // ── タッチ移動（requestAnimationFrame で間引いてスムース化） ──
+  const rafRef = React.useRef<number | null>(null);
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (!isDraggingRef.current) return;
+
+    const touch = e.touches[0];
+    currentYRef.current = touch.clientY;
+    currentXRef.current = touch.clientX;
+
+    const rawDy = touch.clientY - startYRef.current;
+    const rawDx = touch.clientX - startXRef.current;
+
+    // 一定距離動いたらドラッグと認定
+    if (Math.abs(rawDy) > 10 || Math.abs(rawDx) > 10) {
       hasDraggedRef.current = true;
     }
+
+    if (rafRef.current !== null) return; // 既にRAFが予約済みならスキップ
+
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+
+      const dy = currentYRef.current - startYRef.current;
+      const dx = currentXRef.current - startXRef.current;
+
+      // Y軸のみ制御（X軸はカード本体を動かさない）
+      // 上方向: TOP_LIMIT でハードクランプ、下方向: 0 より下には動かさない
+      const clampedY = Math.max(TOP_LIMIT, Math.min(0, dy));
+
+      // MotionValueを直接更新 → Reactレンダリングをバイパスしてガタつきゼロ
+      cardY.set(clampedY);
+
+      // インジケーター用の値（Reactステートで管理するが描画コストは最小）
+      const ratio = Math.min(1, Math.max(0, -dy / PULL_THRESHOLD));
+      const enough = dy < -PULL_THRESHOLD;
+
+      setPullRatio(ratio);
+      setIsPullingEnough(enough);
+      setXOffset(dx);
+    });
   };
 
-  const handleDragEnd = (_: any, info: any) => {
-    setIsDragging(false);
+  // ── タッチ終了 ──
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (!isDraggingRef.current) return;
 
-    // 1. 上に引っ張り続けて離した(使用済み確定)
-    if (dragOffset.y < -PULL_THRESHOLD && onUse) {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    setPullRatio(0);
+    setIsPullingEnough(false);
+    setXOffset(0);
+
+    const dy = currentYRef.current - startYRef.current;
+    const dx = currentXRef.current - startXRef.current;
+
+    // 1. 上に引っ張り確定 → 使用済み
+    if (dy < -PULL_THRESHOLD && onUse) {
       setIsExiting(true);
-      // ローカルの超高速真上退場アニメーション(220ms)が完了した後に親のステートを切り替える
-      // これにより、画面更新時のチラつき・ガタつきは物理的に100%消失します！
-      setTimeout(() => {
-        onUse();
-      }, 220);
+      animate(cardY, -1000, { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] });
+      setTimeout(() => { onUse(); }, 220);
       return;
-    } 
-    
-    // 2. 左右のスワイプ(パス)
-    const sideThreshold = 100;
-    if (info.offset.x > sideThreshold && onNext) {
+    }
+
+    // 2. 右スワイプ → 次へ
+    if (dx > SIDE_THRESHOLD && onNext) {
       setIsLeaving(true);
+      animate(cardY, 0, { type: 'spring', stiffness: 300, damping: 25 });
       onNext();
       return;
-    } else if (info.offset.x < -sideThreshold && onPrev) {
+    }
+
+    // 3. 左スワイプ → 前へ
+    if (dx < -SIDE_THRESHOLD && onPrev) {
       setIsLeaving(true);
+      animate(cardY, 0, { type: 'spring', stiffness: 300, damping: 25 });
       onPrev();
       return;
     }
 
-    // どこにも達しなかった場合は、元の位置へ滑らかに戻る
-    setDragOffset({ x: 0, y: 0 });
+    // 4. どこにも達しなかった → 元の位置へスプリングで戻す（スプリングはここだけ）
+    animate(cardY, 0, { type: 'spring', stiffness: 350, damping: 30 });
 
-    // 指を離した瞬間に hasDragged が即時クリアされると、Framer MotionのonTapが
-    // 直後に誤トリガーされることがあるため、100msのディレイでクリアします
+    // タップ判定クリア
     setTimeout(() => {
       hasDraggedRef.current = false;
     }, 100);
   };
 
+  // インジケーターの透明度（useOpacity）
+  const useOpacity = isDragging && xOffset === 0 || isDragging ? Math.min(1, pullRatio) : 0;
+  const skipOpacity = isDragging && xOffset > 0 ? Math.min(1, xOffset / 100) : 0;
+
+  // インジケーターのY座標（カード本体はMotionValueで動き、インジケーターはカードの子要素なので自動追従）
+  // ただし threshold 越えで静止させたい場合は補正値を計算
+  const indicatorOffsetY = isPullingEnough ? 0 : 0;
+
   return (
     <motion.div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
       onTap={() => {
-        // ドラッグされた履歴がある、または現在ドラッグ中の場合は、絶対にめくらない！
-        if (hasDraggedRef.current || isDragging) {
-          return;
-        }
-        
+        // ドラッグ履歴があるまたはドラッグ中の場合はタップ無効
+        if (hasDraggedRef.current || isDraggingRef.current) return;
+
         if (isActive) {
           onToggleFlip();
         } else {
           onClick();
         }
       }}
-      onTouchStart={(e) => e.stopPropagation()}
-      onTouchEnd={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-      onClick={(e) => e.stopPropagation()}
-      drag={isActive && isTouch && !isLeaving && !isExiting ? "y" : false}
-      dragConstraints={{ top: -150, bottom: 0 }}
-      dragElastic={{ top: 0, bottom: 0.15 }} // 上へ引ききった時のバネ反発を0にしてホールド時のガタつきを根絶、下へ戻す時の弾性のみ維持
-      dragTransition={{ bounceStiffness: 450, bounceDamping: 45 }}
-      onDragStart={handleDragStart}
-      onDrag={handleDrag}
-      onDragEnd={handleDragEnd}
+      // MotionValueを直接styleに渡す（Reactレンダリングをバイパス）
+      style={{
+        y: cardY,
+        touchAction: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        rotate: 0,
+      }}
       animate={
-        isExiting 
-          ? { y: -1000, opacity: 0, scale: 0.8, rotate: 0 } 
-          : { y: 0, opacity: 1, scale: isActive ? 1 : 0.85 }
+        isExiting
+          ? { opacity: 0, scale: 0.8 }
+          : { opacity: 1, scale: isActive ? 1 : 0.85 }
       }
       transition={
-        isExiting 
-          ? { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] } // 高速な上に抜けるイージング
+        isExiting
+          ? { duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }
           : { type: 'spring', stiffness: 300, damping: 25 }
       }
       className={`relative w-80 h-112 cursor-pointer perspective-1000 group select-none touch-none ${
         isActive ? 'scale-100 z-10' : 'scale-85 opacity-35 hover:opacity-50 z-0'
       } transition-all duration-300`}
-      style={{
-        touchAction: 'none',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        // ドラッグ時はY軸固定のため、回転ブレは完全0に固定してガタつきを徹底排除
-        rotate: 0,
-      }}
     >
       {/* === 極小スワイプガイドインジケーター === */}
       {isActive && isTouch && (
         <>
-          {/* 上部: 話した！インジケーター (Pull to Refresh 同調スタイル) */}
+          {/* 上部: 話した！インジケーター */}
           <div
-            className={`absolute -top-12 left-1/2 -translate-x-1/2 font-black text-[10px] px-3.5 py-1.5 rounded-full shadow-lg transition-all duration-150 z-40 pointer-events-none flex items-center gap-1.5 ${
+            className={`absolute -top-12 left-1/2 -translate-x-1/2 font-black text-[10px] px-3.5 py-1.5 rounded-full shadow-lg z-40 pointer-events-none flex items-center gap-1.5 ${
               isPullingEnough
                 ? 'bg-neon-green text-background border border-neon-green shadow-neon-green/30 scale-105 animate-pulse'
                 : 'bg-neon-green/20 border border-neon-green/30 text-neon-green'
             }`}
             style={{
               opacity: useOpacity,
-              transform: `translateX(-50%) translateY(${getSmoothY()}px) scale(${0.8 + useOpacity * 0.2})`,
+              transform: `translateX(-50%) scale(${0.8 + useOpacity * 0.2})`,
             }}
           >
             <span>{isPullingEnough ? '✨ 離して使用済みにする ✨' : '↑ 引っ張って使用済み'}</span>
@@ -257,10 +314,10 @@ export const Card: React.FC<CardProps> = ({
 
           {/* 右側: パスインジケーター */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -right-10 bg-neon-purple/20 border border-neon-purple/45 text-neon-purple font-black text-[11px] px-3.5 py-1.5 rounded-full shadow-lg shadow-neon-purple/10 flex items-center gap-1 z-40 pointer-events-none transition-all duration-100"
+            className="absolute top-1/2 -translate-y-1/2 -right-10 bg-neon-purple/20 border border-neon-purple/45 text-neon-purple font-black text-[11px] px-3.5 py-1.5 rounded-full shadow-lg shadow-neon-purple/10 flex items-center gap-1 z-40 pointer-events-none"
             style={{
               opacity: skipOpacity,
-              transform: `translateY(-50%) translateX(${Math.max(0, dragOffset.x * 0.15)}px) scale(${0.8 + skipOpacity * 0.2})`,
+              transform: `translateY(-50%) translateX(${Math.max(0, xOffset * 0.15)}px) scale(${0.8 + skipOpacity * 0.2})`,
             }}
           >
             <span>パス →</span>
@@ -284,7 +341,6 @@ export const Card: React.FC<CardProps> = ({
             backgroundRepeat: 'no-repeat'
           }}
         >
-          {/* 画像自身の美しさを引き出すための極小フィルタ */}
           <div className="w-full h-full bg-black/5 hover:bg-black/0 transition-all duration-300" />
         </div>
 
@@ -295,12 +351,10 @@ export const Card: React.FC<CardProps> = ({
           }`}
           style={{ 
             transform: 'rotateY(180deg)',
-            // 動的インク滲みグラデーションを背景に注入
             background: `radial-gradient(circle at top right, ${styles.gradientColor}, transparent 75%), var(--card-bg)`,
             boxShadow: isActive ? `0 15px 45px -10px ${styles.glowColor}` : undefined
           }}
         >
-          {/* 装飾グラデーションも空気感に調和 */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/10 to-background/90 pointer-events-none z-0" />
           
           <div className="relative z-10 flex flex-col h-full justify-between">
