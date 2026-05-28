@@ -664,67 +664,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               </div>
             </div>
 
-            {/* データ消失に関する重要な警告カード */}
-            <div className="rounded-2xl p-4 bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/20 dark:border-amber-900/30 space-y-2">
-              <label className="text-xs font-black text-amber-700 dark:text-amber-400 flex items-center gap-1.5 select-none">
-                ⚠️ ローカルデータに関する重要なお願い
-              </label>
-              <p className="text-[10px] text-foreground/80 dark:text-foreground/75 leading-relaxed font-medium">
-                本アプリはプライバシー保護のため、すべてのデータがブラウザのローカル（LocalStorage）のみに安全に保存されますわ。
-              </p>
-              <p className="text-[10px] text-amber-900 dark:text-amber-200 leading-relaxed font-bold">
-                そのため、ブラウザの「キャッシュ履歴・Cookieの消去」をおこなわれますと、お題カードやメンバーのメモがすべて完全に消去されてしまいますの。
-              </p>
-              <p className="text-[10px] text-foreground/70 dark:text-foreground/50 leading-relaxed font-medium">
-                大切なおデータを守るため、定期的に「完全保存 (JSON)」からバックアップファイルをPCにダウンロード保存することを強く推奨いたしますわ。
-              </p>
-            </div>
-
-            {/* 完全フルバックアップ (JSON) エリア */}
-            <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-foreground/90 flex items-center gap-1.5 select-none">
-                  📁 完全フルバックアップ (JSON)
-                </label>
-                <p className="text-[10px] text-foreground/45 leading-relaxed font-semibold">
-                  お題カード、メンバーメモ、会話履歴、現在のセッション、およびUIテーマや操作設定を含む、コトバトラーでの全ての体験情報を一括して完全パック保存・復元できますわ。
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                {/* 完全保存 */}
-                <button
-                  type="button"
-                  onClick={exportJSON}
-                  className="py-2.5 px-3 bg-neon-green/10 hover:bg-neon-green/20 border border-neon-green/20 text-neon-green rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                  title="すべての体験情報を一つのJSONファイルとしてPCに保存しますわ"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  完全保存(JSON)
-                </button>
-
-                {/* 完全復元 */}
-                <button
-                  type="button"
-                  onClick={handleJsonUploadClick}
-                  className="py-2.5 px-3 bg-neon-purple/10 hover:bg-neon-purple/20 border border-neon-purple/20 text-neon-purple rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                  title="バックアップJSONファイルからすべての状態を完全に復元いたしますわ"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  完全復元(JSON)
-                </button>
-              </div>
-
-              {/* 隠しファイルインプット */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleJsonFileChange}
-                accept=".json"
-                className="hidden"
-              />
-            </div>
-
             {/* 表示枚数設定 */}
             <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-3">
               <div className="flex justify-between items-center">
@@ -790,7 +729,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-3.5">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-foreground/90">操作モード</label>
-                <p className="text-[10px] text-foreground/45">ご利用の端末や好みに合わせた操作方式</p>
+                <p className="text-[10px] text-foreground/45">ご利用 of 端末や好みに合わせた操作方式</p>
               </div>
               
               <div className="grid grid-cols-3 gap-1 bg-background/50 border border-foreground/5 rounded-xl p-1">
@@ -885,6 +824,67 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* データ消失に関する重要な警告カード */}
+            <div className="rounded-2xl p-4 bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/20 dark:border-amber-900/30 space-y-2">
+              <label className="text-xs font-black text-amber-700 dark:text-amber-400 flex items-center gap-1.5 select-none">
+                ⚠️ ローカルデータに関する重要なお願い
+              </label>
+              <p className="text-[10px] text-foreground/80 dark:text-foreground/75 leading-relaxed font-medium">
+                本アプリはプライバシー保護のため、すべてのデータがブラウザのローカル（LocalStorage）のみに安全に保存されますわ。
+              </p>
+              <p className="text-[10px] text-amber-900 dark:text-amber-200 leading-relaxed font-bold">
+                そのため、ブラウザの「キャッシュ履歴・Cookieの消去」をおこなわれますと、お題カードやメンバーのメモがすべて完全に消去されてしまいますの。
+              </p>
+              <p className="text-[10px] text-foreground/70 dark:text-foreground/50 leading-relaxed font-medium">
+                大切なおデータを守るため、定期的に「完全保存 (JSON)」からバックアップファイルをPCにダウンロード保存することを強く推奨いたしますわ。
+              </p>
+            </div>
+
+            {/* 完全フルバックアップ (JSON) エリア */}
+            <div className="glass-panel-light rounded-2xl p-4 border border-foreground/5 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-foreground/90 flex items-center gap-1.5 select-none">
+                  📁 完全フルバックアップ (JSON)
+                </label>
+                <p className="text-[10px] text-foreground/45 leading-relaxed font-semibold">
+                  お題カード、メンバーメモ、会話履歴、現在のセッション、およびUIテーマや操作設定を含む、コトバトラーでの全ての体験情報を一括して完全パック保存・復元できますわ。
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {/* 完全保存 */}
+                <button
+                  type="button"
+                  onClick={exportJSON}
+                  className="py-2.5 px-3 bg-neon-green/10 hover:bg-neon-green/20 border border-neon-green/20 text-neon-green rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  title="すべての体験情報を一つのJSONファイルとしてPCに保存しますわ"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  完全保存(JSON)
+                </button>
+
+                {/* 完全復元 */}
+                <button
+                  type="button"
+                  onClick={handleJsonUploadClick}
+                  className="py-2.5 px-3 bg-neon-purple/10 hover:bg-neon-purple/20 border border-neon-purple/20 text-neon-purple rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  title="バックアップJSONファイルからすべての状態を完全に復元いたしますわ"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  完全復元(JSON)
+                </button>
+              </div>
+
+              {/* 隠しファイルインプット */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleJsonFileChange}
+                accept=".json"
+                className="hidden"
+              />
             </div>
 
           </div>
